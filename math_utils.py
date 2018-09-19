@@ -7,6 +7,13 @@ Utils
 import numpy as np
 
 
+def sph2xyz(theta, phi, r=1):
+    x = r * np.sin(theta) * np.cos(phi)
+    y = r * np.sin(theta) * np.sin(phi)
+    z = r * np.cos(theta)
+    return x, y, z
+
+
 def sph_dot(theta1, theta2, delta_phi):
     """
     Compute the dot product of two unit vectors in spherical coordinates
@@ -32,6 +39,3 @@ def sph_dot_lookup_table(ntheta, nphi):
 def sph_dot_lotab(ntheta1, ntheta2, ndelta_phi, tab):
     pass
 
-
-if __name__ == "__name__":
-    tab = sph_dot_lookup_table(100, 100)
