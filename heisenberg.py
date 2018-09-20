@@ -8,6 +8,7 @@ Run a simulation with default parameters
 import getopt
 import json
 import os
+import shutil
 import sys
 import time
 
@@ -17,20 +18,34 @@ from heisenberg_simulation import HeisenbergSimulation
 from heisenberg_system import HeisenbergSystem
 
 
-def init_simulation(simname, nx, ny, nz):
+def run_test_simulation():
+    np.random.seed(1)
+    test_params = dict(J=1, h=0, T=5, nsteps=4000, delta_snp=250)
+    nx, ny, nz = (8, 8, 8)
+    init_simulation("test", nx, ny, nz, params=test_params)
+    run_simulation("test")
+
+
+def init_simulation(simname, nx, ny, nz, params=None):
     """
     Generate a lattice of spins aligned upward z
     :param nx: Number of x cells
     :param ny: Number of y cells
     :param nz: Number of z cells
+    :param params: parameters of the simulation
     """
+    default_params = dict(J=1, h=0, T=1, nsteps=40000, delta_snp=200)
+
+    if not params:
+        params = default_params
+
     simdir = "./simulations/" + simname + "/"
-    default_params = dict(J=1, h=0, T=0.5, nsteps=2500, delta_snp=100)
+    shutil.rmtree(simdir, ignore_errors=True)
     state = np.zeros(shape=(nx, ny, nz, 2))
 
-    os.makedirs(simdir, exist_ok=True)
+    os.makedirs(simdir)
     params_file = open(simdir + "params.json", "w")
-    json.dump(default_params, params_file, sort_keys=True, indent=4)
+    json.dump(params, params_file, sort_keys=True, indent=4)
     np.save(simdir + "state.npy", state)
 
 
@@ -63,6 +78,7 @@ def run_simulation(simname):
     run_time = end - start
     print("Simulation completed in {0} seconds".format(run_time))
 
+    print("Saving results ...", end="")
     if os.path.isfile(simdir + "snapshots.npy") and os.path.isfile(simdir + "snapshots_t.npy"):
         old_snapshots = np.load(simdir + "snapshots.npy")
         snapshots = np.concatenate((old_snapshots, hsim.snapshots[1:]))
@@ -78,21 +94,23 @@ def run_simulation(simname):
     np.save(simdir + "snapshots.npy", snapshots)
     np.save(simdir + "snapshots_t.npy", snapshots_t)
     np.save(simdir + "state.npy", hsim.system.state)
-
+    print("done")
 
 def usage():
     print("""
     Usage: heisenberg.py [OPTIONS] [PARAMETERS]\n
     -r, --run=SIMNAME                 Run a simulation named SIMNAME
     -d, --default=SIZE                Generate a default simulation with SIZE specified e.g. 10x10x10
+    -t, --test                        Run a test simulations with default parameters to measure performances
     -h, --help                        Shows this message
     """)
 
 
 if __name__ == "__main__":
+    mode = ""
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hr:i:d:", ["help", "initialize=", "run=", "dimensions="])
+        opts, args = getopt.getopt(sys.argv[1:], "htr:i:d:", ["help", "test", "initialize=", "run=", "dimensions="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -108,6 +126,8 @@ if __name__ == "__main__":
             simname = arg
         elif opt in ("-d", "--dimensions"):
             nx, ny, nz = arg.split("x")
+        elif opt in ("-t", "--test"):
+            mode = "test"
 
     if mode == "run":
         print(f"Running simulation {simname}")
@@ -115,5 +135,10 @@ if __name__ == "__main__":
     elif mode == "init":
         init_simulation(simname, int(nx), int(ny), int(nz))
         print(f"Default simulation {simname} generated withe default params. \nLattice has dimensions {nx}x{ny}x{nz}")
+    elif mode == "test":
+        run_test_simulation()
     else:
+        usage()
         sys.exit(2)
+
+    print("Finished")
