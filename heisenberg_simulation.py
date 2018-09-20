@@ -39,4 +39,5 @@ class HeisenbergSimulation:
             self.system.step()
             i = np.argmax(t == self.snapshots_t)
             if i != 0:
+                print("Step number {0} ".format(t))
                 self.snapshots[i, :, :, :, :] = self.system.S.copy()
