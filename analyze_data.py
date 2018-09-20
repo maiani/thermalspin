@@ -25,13 +25,15 @@ def load_data(simname):
     snapshots_number = snapshots.shape[0]
 
     # Build steps axis
-    t = np.arange(0, snapshots_number) * delta_snapshots
+    snapshots_t = np.load(simdir + "snapshots_t.npy")
 
-    return snapshots, params, t
+    return snapshots, params, snapshots_t
 
 
-def compute_EM(snapshots, params, t):
-    # Compute energy and magnetization
+def compute_EM(snapshots, params, snapshots_t):
+    """
+    Compute energy and magnetization
+    """
 
     J = params["J"]
     h = params["h"]
@@ -49,24 +51,26 @@ def compute_EM(snapshots, params, t):
     return E, M
 
 
-def plot_EM(t, E, M):
-    # Plot energy
+def plot_energy(snapshots_t, E):
+    """"
+    Plot energy
+    """
     plt.figure()
-    plt.plot(t, E)
+    plt.plot(snapshots_t, E)
     plt.title("Energy")
 
-    # Plot magnetization
-    plt.figure()
-    plt.plot(t, M[:, 0])
-    plt.title("Mx")
 
-    plt.figure()
-    plt.plot(t, M[:, 1])
-    plt.title("My")
-
-    plt.figure()
-    plt.plot(t, M[:, 2])
-    plt.title("Mz")
+def plot_magnetization(snapshots_t, M):
+    """"
+    Plot energy
+    """
+    fig = plt.figure()
+    ax = fig.gca()
+    line1, = ax.plot(snapshots_t, M[:, 0], label='Mx')
+    line2, = ax.plot(snapshots_t, M[:, 1], label='My')
+    line3, = ax.plot(snapshots_t, M[:, 2], label='Mz')
+    ax.legend()
+    plt.legend()
 
 
 def plot_state(snapshots, n=-1):
@@ -81,24 +85,16 @@ def plot_state(snapshots, n=-1):
                           np.arange(0, Ny),
                           np.arange(0, Nz))
 
-    S = snapshots[n, :, :, :, :]
+    state = snapshots[n, :, :, :, :]
 
     u = np.zeros(shape=(Nx, Ny, Nz))
     v = np.zeros(shape=(Nx, Ny, Nz))
     w = np.zeros(shape=(Nx, Ny, Nz))
 
     for i, j, k in np.ndindex(Nx, Ny, Nz):
-        u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(S[i, j, k, 0], S[i, j, k, 1])
+        u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(state[i, j, k, 0], state[i, j, k, 1])
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     ax.quiver(x, y, z, u, v, w, pivot='middle')
-    ax.set_zlim(-2, 2)
     plt.show()
-
-
-if __name__ == "__main__":
-    snapshots, params, t = load_data("sim_0")
-    E, M = compute_EM(snapshots, params, t)
-    plot_EM(t, E, M)
-    plot_state(snapshots)

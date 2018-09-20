@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Utils 
+Mathematical utility functions
 """
 
 import numpy as np
 
 
-def sph2xyz(theta, phi, r=1):
-    x = r * np.sin(theta) * np.cos(phi)
-    y = r * np.sin(theta) * np.sin(phi)
-    z = r * np.cos(theta)
+def sph2xyz(theta, phi):
+    """
+    Convert spherical coordinates to unit vector
+    :param theta: theta angle
+    :param phi: phi angle
+    :return: (x, y, z) coordinates
+    """
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
     return x, y, z
 
 
@@ -21,9 +27,24 @@ def sph_dot(theta1, theta2, delta_phi):
     return np.sin(theta1) * np.cos(delta_phi) * np.sin(theta2) + np.cos(theta1) * np.cos(theta2)
 
 
+def rand_sph():
+    """
+    Generate random unit vector in spherical coordinates
+    :return: (theta, phi) the two angles
+    """
+    u, v = np.random.uniform(size=(2))
+    theta = np.arccos(2 * u - 1)
+    phi = 2 * np.pi * v
+
+    return theta, phi
+
+
 def sph_dot_lookup_table(ntheta, nphi):
     """
     Build lookup table for dot product of two unit vectors in spherical coordinates
+    :param ntheta: number of theta points
+    :param nphi:   number of phi point
+    :return: (tab, theta, phi) arrays
     """
     tab = np.zeros(shape=(ntheta, ntheta, nphi))
 
@@ -38,4 +59,5 @@ def sph_dot_lookup_table(ntheta, nphi):
 
 def sph_dot_lotab(ntheta1, ntheta2, ndelta_phi, tab):
     pass
+
 
