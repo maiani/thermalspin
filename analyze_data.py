@@ -46,8 +46,8 @@ def compute_EM(snapshots, params, snapshots_t):
 
     for i in np.arange(0, snapshots_number):
         sys = HeisenbergSystem(snapshots[i, :, :, :, :], J=J, h=h, T=T)
-        E[i] = sys.H
-        M[i, :] = sys.M
+        E[i] = sys.energy
+        M[i, :] = sys.magnetization
 
     return E, M
 

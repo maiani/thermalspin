@@ -9,7 +9,7 @@ a 2D or 3D lattice
 
 To generate a default lattice with given dimension just run
 ```lang=bash
-$ python3 heisenberg.py -i sim_1 -d 8x8x4
+$ python3 heisenberg.py -i sim_1 -d 16x16x8
 ```
 A simulation directory will be created inside ./simulations with a default parameter file
 and a initialized lattice of the given dimension.

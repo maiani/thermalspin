@@ -19,8 +19,11 @@ from heisenberg_system import HeisenbergSystem
 
 
 def run_test_simulation():
+    """
+    Run a test simulation with predefined parameters
+    """
     np.random.seed(1)
-    test_params = dict(J=1, h=0, T=5, nsteps=4000, delta_snp=250)
+    test_params = dict(J=25, h=0, T=5, nsteps=2000000, delta_snp=500)
     nx, ny, nz = (8, 8, 8)
     init_simulation("test", nx, ny, nz, params=test_params)
     run_simulation("test")
@@ -34,7 +37,7 @@ def init_simulation(simname, nx, ny, nz, params=None):
     :param nz: Number of z cells
     :param params: parameters of the simulation
     """
-    default_params = dict(J=1, h=0, T=1, nsteps=40000, delta_snp=200)
+    default_params = dict(J=10, h=0, T=1, nsteps=100000, delta_snp=1000)
 
     if not params:
         params = default_params

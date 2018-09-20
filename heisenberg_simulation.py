@@ -27,8 +27,8 @@ class HeisenbergSimulation:
         self.system = hsys
         self.snapshot_delta = snapshot_delta
 
-        self.snapshot_number = int(np.ceil(nsteps / snapshot_delta))
-        self.snapshots_t = np.arange(0, nsteps, snapshot_delta)
+        self.snapshot_number = int(nsteps / snapshot_delta) + 1
+        self.snapshots_t = np.arange(0, self.snapshot_number) * snapshot_delta
         self.snapshots = np.zeros(shape=(self.snapshot_number, self.system.nx, self.system.ny, self.system.nz, 2))
 
         self.snapshots[0:, :, :, :, :] = hsys.state.copy()
