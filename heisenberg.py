@@ -17,14 +17,14 @@ from heisenberg_simulation import HeisenbergSimulation
 from heisenberg_system import HeisenbergSystem
 
 
-def generate_default(nx, ny, nz):
+def init_simulation(simname, nx, ny, nz):
     """
     Generate a lattice of spins aligned upward z
     :param nx: Number of x cells
     :param ny: Number of y cells
     :param nz: Number of z cells
     """
-    simdir = "./simulations/default/"
+    simdir = "./simulations/" + simname + "/"
     default_params = dict(J=1, h=0, T=0.5, nsteps=2500, delta_snp=100)
     state = np.zeros(shape=(nx, ny, nz, 2))
 
@@ -92,7 +92,7 @@ def usage():
 if __name__ == "__main__":
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hr:d:", ["help", "run=", "default="])
+        opts, args = getopt.getopt(sys.argv[1:], "hr:i:d:", ["help", "initialize=", "run=", "dimensions="])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -101,8 +101,19 @@ if __name__ == "__main__":
             usage()
             sys.exit()
         elif opt in ("-r", "--run"):
-            run_simulation(arg)
-        elif opt in ("-d", "--default"):
+            mode = "run"
+            simname = arg
+        elif opt in ("-i", "--initialize"):
+            mode = "init"
+            simname = arg
+        elif opt in ("-d", "--dimensions"):
             nx, ny, nz = arg.split("x")
-            generate_default(int(nx), int(ny), int(nz))
-            sys.exit()
+
+    if mode == "run":
+        print(f"Running simulation {simname}")
+        run_simulation(simname)
+    elif mode == "init":
+        init_simulation(simname, int(nx), int(ny), int(nz))
+        print(f"Default simulation {simname} generated withe default params. \nLattice has dimensions {nx}x{ny}x{nz}")
+    else:
+        sys.exit(2)

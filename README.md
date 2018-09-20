@@ -9,17 +9,13 @@ a 2D or 3D lattice
 
 To generate a default lattice with given dimension just run
 ```lang=bash
-$ python3 heisenberg.py --default 10x10x2
+$ python3 heisenberg.py -i sim_1 -d 8x8x4
 ```
-A directory will be created with default file.
-Now just rename the directory and edit the parameters in the json file.
-```lang=bash
-$ mv ./simulations/default ./simulations/sim_0
-$ nano ./simulations/sim_0/params.json
+A simulation directory will be created inside ./simulations with a default parameter file
+and a initialized lattice of the given dimension.
+After have edit the parameters in the json file, you are ready to run the simulation with:
 ```
-Then you are ready to run the simulation with:
-```
-$ python3 heisenberg.py --run sim_0
+$ python3 heisenberg.py -r sim_1
 ```
 To analyze the result, just run data_visualization.ipynb in Jupiter.
 
@@ -32,7 +28,7 @@ Inside the ./simulation directory there will be saved four files:
 
 If now run again the simulation with
 ```
-$ python3 heisenberg.py --run sim_0
+$ python3 heisenberg.py --r sim_1
 ```
 
 the program will just take the end state as initial state and append the results to the old ones.

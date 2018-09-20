@@ -9,6 +9,7 @@ import json
 
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 
 from heisenberg_system import HeisenbergSystem
 from math_utils import sph2xyz
@@ -95,6 +96,6 @@ def plot_state(snapshots, n=-1):
         u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(state[i, j, k, 0], state[i, j, k, 1])
 
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax: Axes3D = fig.gca(projection='3d')
     ax.quiver(x, y, z, u, v, w, pivot='middle')
     plt.show()
