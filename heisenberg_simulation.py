@@ -30,8 +30,12 @@ class HeisenbergSimulation:
         self.snapshot_number = int(nsteps / snapshot_delta) + 1
         self.snapshots_t = np.arange(0, self.snapshot_number) * snapshot_delta
         self.snapshots = np.zeros(shape=(self.snapshot_number, self.system.nx, self.system.ny, self.system.nz, 2))
+        self.snapshots_e = np.zeros(shape=self.snapshot_number)
+        self.snapshots_m = np.zeros(shape=(self.snapshot_number, 3))
 
-        self.snapshots[0:, :, :, :, :] = hsys.state.copy()
+        self.snapshots[0:, :, :, :, :] = self.system.state.copy()
+        self.snapshots_e[0] = self.system.energy
+        self.snapshots_m[0, :] = self.system.magnetization
 
     def run(self):
 
@@ -41,3 +45,5 @@ class HeisenbergSimulation:
             if i != 0:
                 print("Step number {0} ".format(t))
                 self.snapshots[i, :, :, :, :] = self.system.state.copy()
+                self.snapshots_e[i] = self.system.energy
+                self.snapshots_m[i, :] = self.system.magnetization
