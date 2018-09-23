@@ -26,11 +26,11 @@ To analyze the result, just run `data_visualization.ipynb` in Jupiter.
 
 ### Continue a simulation 
 Inside the ./simulation directory there will be saved four files:
-- `params.json`       Parameters of the simulation
-- `state.npy`         End state of the simulation
-- `snapshots.npy`     Snapshosts of the sistems at various steps of the simulation 
-- `snapshots_t.npy`   Step number of the snapshots taken
-- `results.npy`       Energy and magnetization of each snapshot
+- `params.json`            Parameters of the simulation
+- `state.npy`              End state of the simulation
+- `snapshots.npy`          Snapshosts of the sistems at various steps of the simulation 
+- `snapshots_params.npy`   Parameters when the snapshosts were taken
+- `results.npy`            Energy and magnetization of each snapshot
 
 If now run again the simulation with
 ```

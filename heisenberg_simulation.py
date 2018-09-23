@@ -16,34 +16,54 @@ class HeisenbergSimulation:
     It run the simulation and collect the results.
     """
 
-    def __init__(self, nsteps, hsys: HeisenbergSystem, snapshot_delta):
+    def __init__(self, hsys: HeisenbergSystem):
         """
-        :param nsteps: number of steps to be computed
         :param hsys: system to be evolved
-        :param snapshot_delta: number of steps before taking a snapshot of the system
         """
 
-        self.nsteps = nsteps
+        self.SNAPSHOTS_ARRAY_DIMENSION = int(10e3)
+
         self.system = hsys
-        self.snapshot_delta = snapshot_delta
+        self.steps_counter = 0
+        self.snapshots_counter = 0
 
-        self.snapshot_number = int(nsteps / snapshot_delta) + 1
-        self.snapshots_t = np.arange(0, self.snapshot_number) * snapshot_delta
-        self.snapshots = np.zeros(shape=(self.snapshot_number, self.system.nx, self.system.ny, self.system.nz, 2))
-        self.snapshots_e = np.zeros(shape=self.snapshot_number)
-        self.snapshots_m = np.zeros(shape=(self.snapshot_number, 3))
+        self.snapshots = np.zeros(
+            shape=(self.SNAPSHOTS_ARRAY_DIMENSION, self.system.nx, self.system.ny, self.system.nz, 2))
 
-        self.snapshots[0:, :, :, :, :] = self.system.state.copy()
-        self.snapshots_e[0] = self.system.energy
-        self.snapshots_m[0, :] = self.system.magnetization
+        self.snapshots_t = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_e = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_m = np.zeros(shape=(self.SNAPSHOTS_ARRAY_DIMENSION, 3))
 
-    def run(self):
+        self.snapshots_J = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_T = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_h = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
 
-        for t in range(1, self.nsteps + 1):
+        self.take_snapshot()
+
+    def run(self, nsteps):
+        self.steps_counter += nsteps
+        for t in range(1, nsteps + 1):
             self.system.step()
-            i = np.argmax(t == self.snapshots_t)
-            if i != 0:
-                print("Step number {0} ".format(t))
-                self.snapshots[i, :, :, :, :] = self.system.state.copy()
-                self.snapshots_e[i] = self.system.energy
-                self.snapshots_m[i, :] = self.system.magnetization
+
+    def take_snapshot(self):
+        # TODO: Fix for snapshots exceeding the array dimension
+        print(f"Step number: {self.steps_counter}")
+        self.snapshots[self.snapshots_counter, :, :, :, :] = self.system.state.copy()
+        self.snapshots_t[self.snapshots_counter] = self.steps_counter
+        self.snapshots_e[self.snapshots_counter] = self.system.energy
+        self.snapshots_m[self.snapshots_counter, :] = self.system.magnetization
+
+        self.snapshots_J[self.snapshots_counter] = self.system.J
+        self.snapshots_T[self.snapshots_counter] = self.system.T
+        self.snapshots_h[self.snapshots_counter] = self.system.h
+
+        self.snapshots_counter += 1
+
+    def run_with_snapshots(self, nstep, delta_snapshots):
+        if nstep % delta_snapshots != 0:
+            raise Exception("nstep must be multiple of delta_snapshots")
+
+        nsnapshots = int(nstep / delta_snapshots)
+        for t in range(0, nsnapshots):
+            self.run(delta_snapshots)
+            self.take_snapshot()

@@ -12,11 +12,11 @@ from math_utils import sph_dot, sph2xyz, rand_sph
 
 class HeisenbergSystem:
 
-    def __init__(self, state, J, h, temperature):
+    def __init__(self, state, J, h, T):
         self.J = J
         self.h = h
-        self.temperature = temperature
-        self.beta = 1 / temperature
+        self.T = T
+        self.beta = 1 / T
 
         self.state = state
         self.nx = self.state.shape[0]
@@ -82,7 +82,6 @@ class HeisenbergSystem:
             counter_r += r
 
         return counter_r
-
 
     def step(self):
         """

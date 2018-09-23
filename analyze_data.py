@@ -5,8 +5,6 @@
 Show simple data of the simulation
 """
 
-import json
-
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
@@ -15,28 +13,32 @@ from heisenberg_system import HeisenbergSystem
 from math_utils import sph2xyz
 
 
-def load_data(simname):
+def load_results(simname):
     """
-    Load the data of a simulation
+    Load the results of a simulation
     :param simname: name of the simulation
-    :return: snapshots, params, snapshots_t, e, m
+    :return: final_state, t, e, m
     """
+
     simdir = "./simulations/{0}/".format(simname)
 
-    params_file = open(simdir + "params.json", "r")
-    params = json.load(params_file)
-
-    snapshots = np.load(simdir + "snapshots.npy")
-
+    final_state = np.load(simdir + "state.npy")
     results = np.load(simdir + "results.npy")
 
     e = results[:, 0]
     m = results[:, 1:4]
+
     # Build steps axis
-    snapshots_t = np.load(simdir + "snapshots_t.npy")
+    snapshots_params = np.load(simdir + "snapshots_params.npy")
+    t = snapshots_params[:, 0]
 
-    return snapshots, params, snapshots_t, e, m
+    return final_state, t, e, m
 
+
+def load_snapshots(simname):
+    simdir = "./simulations/{0}/".format(simname)
+    snapshots = np.load(simdir + "snapshots.npy")
+    return snapshots
 
 # Function for computing quantities
 def compute_em(snapshots, params):
@@ -53,7 +55,7 @@ def compute_em(snapshots, params):
     magnetization = np.zeros(shape=(snapshots_number, 3))
 
     for i in np.arange(0, snapshots_number):
-        sys = HeisenbergSystem(snapshots[i, :, :, :, :], J=J, h=h, temperature=T)
+        sys = HeisenbergSystem(snapshots[i, :, :, :, :], J=J, h=h, T=T)
         energy[i] = sys.energy
         magnetization[i, :] = sys.magnetization
 
@@ -113,26 +115,25 @@ def plot_abs_magnetization(snapshots_t, magnetization):
     plt.title("Absolute magnetization")
     return fig
 
-def plot_state(snapshots, n=-1):
+
+def plot_state(snapshot):
     """
     Plot system state
     """
-    nx = snapshots.shape[1]
-    ny = snapshots.shape[2]
-    nz = snapshots.shape[3]
+    nx = snapshot.shape[0]
+    ny = snapshot.shape[1]
+    nz = snapshot.shape[2]
 
     x, y, z = np.meshgrid(np.arange(0, nx),
                           np.arange(0, ny),
                           np.arange(0, nz))
-
-    state = snapshots[n, :, :, :, :]
 
     u = np.zeros(shape=(nx, ny, nz))
     v = np.zeros(shape=(nx, ny, nz))
     w = np.zeros(shape=(nx, ny, nz))
 
     for i, j, k in np.ndindex(nx, ny, nz):
-        u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(state[i, j, k, 0], state[i, j, k, 1])
+        u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(snapshot[i, j, k, 0], snapshot[i, j, k, 1])
 
     fig = plt.figure()
     ax: Axes3D = fig.gca(projection='3d')

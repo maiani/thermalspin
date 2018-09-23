@@ -30,7 +30,7 @@ def init_simulation(simname, nx, ny, nz, params=None, theta_0=None, phi_0=None):
     :param phi_0:
     :param theta_0:
     """
-    default_params = dict(J=1, h=0, T=1, nsteps=5000000, delta_snp=2500)
+    default_params = dict(J=1, h=0, T=0.5, nsteps=10000000, delta_snp=10000)
 
     if not params:
         params = default_params
@@ -56,7 +56,9 @@ def init_simulation(simname, nx, ny, nz, params=None, theta_0=None, phi_0=None):
     np.save(simdir + "state.npy", state)
 
 
-def run_simulation(simname):
+def run_simulation(simname, save_snapshots=False):
+    # TODO: params history is note saved
+
     simdir = "./simulations/{0}/".format(simname)
 
     if os.path.isfile(simdir + "params.json"):
@@ -78,45 +80,69 @@ def run_simulation(simname):
 
     sys = HeisenbergSystem(state, J, h, T)
 
-    hsim = HeisenbergSimulation(nsteps, sys, delta_snp)
+    hsim = HeisenbergSimulation(sys)
     start = time.time()
-    hsim.run()
+    hsim.run_with_snapshots(nsteps, delta_snp)
     end = time.time()
     run_time = end - start
     print("Simulation completed in {0} seconds".format(run_time))
 
 
     print("Saving results ...", end="")
+    start = time.time()
 
-    results = np.zeros(shape=(hsim.snapshot_number, 4))
-    results[:, 0] = hsim.snapshots_e
-    results[:, 1:4] = hsim.snapshots_m
+    # Save the last state
+    np.save(simdir + "state.npy", hsim.system.state)
 
-    if os.path.isfile(simdir + "snapshots.npy") and os.path.isfile(simdir + "snapshots_t.npy") and os.path.isfile(
-            simdir + "results.npy"):
-        old_snapshots = np.load(simdir + "snapshots.npy")
-        snapshots = np.concatenate((old_snapshots, hsim.snapshots[1:]))
+    # Collect the results of the simulation
+    new_results = np.zeros(shape=(hsim.snapshots_counter, 4))
+    new_results[:, 0] = hsim.snapshots_e[:hsim.snapshots_counter]
+    new_results[:, 1:4] = hsim.snapshots_m[:hsim.snapshots_counter]
+
+    # Collect the snapshots and params
+    new_snapshots_params = np.zeros(shape=(hsim.snapshots_counter, 4))
+    new_snapshots_params[:, 0] = hsim.snapshots_t[:hsim.snapshots_counter]
+    new_snapshots_params[:, 1] = hsim.snapshots_J[:hsim.snapshots_counter]
+    new_snapshots_params[:, 2] = hsim.snapshots_h[:hsim.snapshots_counter]
+    new_snapshots_params[:, 3] = hsim.snapshots_T[:hsim.snapshots_counter]
+
+    # If old data is found, append the new one
+    if os.path.isfile(simdir + "snapshots_params.npy") and os.path.isfile(simdir + "results.npy"):
 
         old_results = np.load(simdir + "results.npy")
-        results = np.concatenate((old_results, results[1:]))
+        results = np.concatenate((old_results, new_results[1:]))
 
-        old_snapshots_t = np.load(simdir + "snapshots_t.npy")
-        last_t = old_snapshots_t[-1]
-        new_snapshots_t = hsim.snapshots_t + np.ones(hsim.snapshots_t.shape) * last_t
-        snapshots_t = np.concatenate((old_snapshots_t, new_snapshots_t[1:]))
+        old_snapshots_params = np.load(simdir + "snapshots_params.npy")
+        last_t = old_snapshots_params[-1, 0]
+        new_snapshots_params[:, 0] += last_t
+        snapshots_params = np.concatenate((old_snapshots_params, new_snapshots_params[1:]))
+
     else:
-        snapshots = hsim.snapshots
-        snapshots_t = hsim.snapshots_t
+        snapshots_params = new_snapshots_params
+        results = new_results
 
-    np.save(simdir + "snapshots.npy", snapshots)
-    np.save(simdir + "snapshots_t.npy", snapshots_t)
-    np.save(simdir + "state.npy", hsim.system.state)
+    # Save all
+    np.save(simdir + "snapshots_params.npy", snapshots_params)
     np.save(simdir + "results.npy", results)
-    print("done")
+
+    if save_snapshots:
+        new_snapshots = hsim.snapshots[:hsim.snapshots_counter]
+        if os.path.isfile(simdir + "snapshots.npy"):
+            old_snapshots = np.load(simdir + "snapshots.npy")
+            snapshots = np.concatenate((old_snapshots, new_snapshots[1:]))
+
+        else:
+            snapshots = new_snapshots
+        np.save(simdir + "snapshots.npy", snapshots)
+
+    end = time.time()
+    saving_time = end - start
+    print("done in {0} seconds.".format(saving_time))
 
 def usage():
     print("""
     Usage: heisenberg.py [OPTIONS] [PARAMETERS]\n
+    -i, --init=SIMNAME                Initialize a simulation, need to specify next a dimension and a magnetization
     -r, --run=SIMNAME                 Run a simulation named SIMNAME
     -d, --dimensions=SIZE             Generate a default simulation with SIZE specified e.g. 10x10x10
     -m, --magnetization=DIRECTION     Initial magnetization along DIRECTION specified like 0,0
