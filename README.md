@@ -1,11 +1,15 @@
 # ThermalSpin
 
 A simple implementation of a Monte Carlo simulation of the classical Heisenberg model on
-a 2D or 3D lattice
+a 2D or 3D lattice.
+
+The program use Numpy for the linear algebra and Numba jit compiler to accelerate the simulation.
+
+The output can be viewed through a Jupyter notebook.
 
 ## Usage
 
-### Run a simulation 
+### Run a single simulation 
 
 To generate a default lattice with given dimension just run
 ```lang=bash
@@ -24,7 +28,6 @@ $ python3 heisenberg.py -r sim_16
 ```
 To analyze the result, just run `data_visualization.ipynb` in Jupiter.
 
-### Continue a simulation 
 Inside the ./simulation directory there will be saved four files:
 - `params.json`            Parameters of the simulation
 - `state.npy`              End state of the simulation
@@ -38,6 +41,23 @@ $ python3 heisenberg.py --r sim_16
 ```
 
 the program will just take the end state as initial state and append the results to the old ones.
+
+### Run a set of simulations
+
+To initialize a set of system at different temperature, for example from 0.5 to 3 with a deltaT of 1.5:
+
+```lang=bash
+$ python3 heisenberg_set.py -i sim_set -d 16x16x16 -t 0.5,3,0.5
+```
+
+And then to run the set:
+
+```
+$ python3 heisenberg.py -r sim_set
+```
+To analyze the result, just run `set_data_visualization.ipynb` in Jupyter.
+
+
 
 # Author
 - Andrea Maiani (andrea.maiani@mail.polimi.it)

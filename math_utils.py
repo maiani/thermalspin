@@ -8,7 +8,7 @@ import numpy as np
 from numba import jit
 
 
-@jit(nopython=True)
+@jit(nopython=True, cache=False, parallel=False)
 def sph2xyz(theta, phi):
     """
     Convert spherical coordinates to unit vector
@@ -22,7 +22,7 @@ def sph2xyz(theta, phi):
     return np.array([x, y, z])
 
 
-@jit(nopython=True)
+@jit(nopython=True, cache=False, parallel=False)
 def sph_dot(theta1, theta2, delta_phi):
     """
     Compute the dot product of two unit vectors in spherical coordinates
@@ -30,8 +30,8 @@ def sph_dot(theta1, theta2, delta_phi):
     return np.sin(theta1) * np.cos(delta_phi) * np.sin(theta2) + np.cos(theta1) * np.cos(theta2)
 
 
-@jit(nopython=True)
-def rand_sph():
+@jit(nopython=True, cache=False, parallel=False)
+def sph_u_rand():
     """
     Generate random unit vector in spherical coordinates
     :return: (theta, phi) the two angles

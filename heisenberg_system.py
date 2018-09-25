@@ -7,10 +7,13 @@ Classical Heisenberg model Monte Carlo simulator
 import numpy as np
 from numba import jit
 
-from math_utils import sph_dot, sph2xyz, rand_sph
+from math_utils import sph_dot, sph2xyz, sph_u_rand
 
 
 class HeisenbergSystem:
+    """
+    This class represent a system described by an Heisenberg Hamiltonian, also known as O(3) model
+    """
 
     def __init__(self, state, J, h, T):
         self.J = J
@@ -23,11 +26,17 @@ class HeisenbergSystem:
         self.ny = self.state.shape[1]
         self.nz = self.state.shape[2]
         self.nspin = self.nx * self.ny * self.nz
+
+        # Compute energy and magnetization of the initial state
         self.energy = self.compute_energy()
         self.total_magnetization = self.compute_magnetization()
 
     @property
     def magnetization(self):
+        """
+        The magnetization of the system
+        :return: The value of the magnetization
+        """
         return self.total_magnetization / self.nspin
 
     def compute_energy(self):
@@ -72,7 +81,7 @@ class HeisenbergSystem:
 
     def compute_magnetization(self):
         """
-        Compute the mean magnetization
+        Compute the total magnetization
         :return: [Mx, My, Mz] vector of mean magnetization
         """
         counter_r = np.zeros(3)
@@ -85,7 +94,8 @@ class HeisenbergSystem:
 
     def step(self):
         """
-        Evolve the system computing a step of Metropolis-Hastings Monte Carlo
+        Evolve the system computing a step of Metropolis-Hastings Monte Carlo.
+        It actually calls the non-object oriented function.
         """
         s, e, m = numba_step(self.state, self.nx, self.ny, self.nz, self.J, self.h, self.beta, self.energy,
                              self.total_magnetization)
@@ -94,8 +104,12 @@ class HeisenbergSystem:
         self.total_magnetization = m
 
 
-@jit(nopython=True)
+@jit(nopython=True, cache=False, parallel=False)
 def numba_step(state, nx, ny, nz, J, h, beta, energy, total_magnetization):
+    """
+    Evolve the system computing a step of Metropolis-Hastings Monte Carlo.
+    This non OOP function is accelerated trough jit compilation.
+    """
     # Select a random spin in the system
     i = np.random.randint(0, nx)
     j = np.random.randint(0, ny)
@@ -128,7 +142,7 @@ def numba_step(state, nx, ny, nz, J, h, beta, energy, total_magnetization):
     e0 += -h * np.cos(state[i, j, k, 0])
 
     # Generate a new random direction and compute energy due to the spin in the new direction
-    r_theta, r_phi = rand_sph()
+    r_theta, r_phi = sph_u_rand()
 
     e1 = 0
     ii = (i + 1) % nx
