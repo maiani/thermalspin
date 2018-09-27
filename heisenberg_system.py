@@ -28,8 +28,8 @@ class HeisenbergSystem:
         self.nspin = self.nx * self.ny * self.nz
 
         # Compute energy and magnetization of the initial state
-        self.energy = self.compute_energy()
-        self.total_magnetization = self.compute_magnetization()
+        self.energy = compute_energy(self.state, self.nx, self.ny, self.nz, J, h)
+        self.total_magnetization = compute_magnetization(self.state, self.nx, self.ny, self.nz)
 
     @property
     def magnetization(self):
@@ -38,59 +38,6 @@ class HeisenbergSystem:
         :return: The value of the magnetization
         """
         return self.total_magnetization / self.nspin
-
-    def compute_energy(self):
-        """
-        Compute the energy of the system
-        :return: The value of the energy
-        """
-        energy_counter = 0
-
-        dotp_counter = 0
-        ext_field_counter = 0
-
-        for i, j, k in np.ndindex(self.nx, self.ny, self.nz):
-            ii = (i + 1) % self.nx
-            dotp_counter += sph_dot(self.state[i, j, k, 0], self.state[ii, j, k, 0],
-                                    self.state[i, j, k, 1] - self.state[ii, j, k, 1])
-            ii = (i - 1) % self.nx
-            dotp_counter += sph_dot(self.state[i, j, k, 0], self.state[ii, j, k, 0],
-                                    self.state[i, j, k, 1] - self.state[ii, j, k, 1])
-
-            jj = (j + 1) % self.ny
-            dotp_counter += sph_dot(self.state[i, j, k, 0], self.state[i, jj, k, 0],
-                                    self.state[i, j, k, 1] - self.state[i, jj, k, 1])
-            jj = (j - 1) % self.ny
-            dotp_counter += sph_dot(self.state[i, j, k, 0], self.state[i, jj, k, 0],
-                                    self.state[i, j, k, 1] - self.state[i, jj, k, 1])
-
-            if self.nz > 1:
-                kk = (k + 1) % self.nz
-                dotp_counter += sph_dot(self.state[i, j, k, 0], self.state[i, j, kk, 0],
-                                        self.state[i, j, k, 1] - self.state[i, j, kk, 1])
-                kk = (k - 1) % self.nz
-                dotp_counter += sph_dot(self.state[i, j, k, 0], self.state[i, j, kk, 0],
-                                        self.state[i, j, k, 1] - self.state[i, j, kk, 1])
-
-            ext_field_counter += np.cos(self.state[i, j, k, 0])
-
-        energy_counter += -self.J * dotp_counter
-        energy_counter += -self.h * ext_field_counter
-
-        return np.array(energy_counter)
-
-    def compute_magnetization(self):
-        """
-        Compute the total magnetization
-        :return: [Mx, My, Mz] vector of mean magnetization
-        """
-        counter_r = np.zeros(3)
-
-        for i, j, k in np.ndindex(self.nx, self.ny, self.nz):
-            r = sph2xyz(self.state[i, j, k, 0], self.state[i, j, k, 1])
-            counter_r += r
-
-        return counter_r
 
     def step(self):
         """
@@ -104,12 +51,76 @@ class HeisenbergSystem:
         self.total_magnetization = m
 
 
-@jit(nopython=True, cache=False, parallel=False)
+# Compiled functions
+
+@jit(nopython=True, cache=True)
+def compute_magnetization(state, nx, ny, nz):
+    """
+    Compute the total magnetization
+    :return: [Mx, My, Mz] vector of mean magnetization
+    """
+
+    counter_r = np.zeros(3)
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        r = sph2xyz(state[i, j, k, 0], state[i, j, k, 1])
+        counter_r += r
+
+    return counter_r
+
+
+@jit(nopython=True, cache=True)
+def site_energy(i, j, k, state, nx, ny, nz, J, h):
+    e0 = 0
+    ii = (i + 1) % nx
+    e0 += sph_dot(state[i, j, k, 0], state[ii, j, k, 0],
+                  state[i, j, k, 1] - state[ii, j, k, 1])
+    ii = (i - 1) % nx
+    e0 += sph_dot(state[i, j, k, 0], state[ii, j, k, 0],
+                  state[i, j, k, 1] - state[ii, j, k, 1])
+    jj = (j + 1) % ny
+    e0 += sph_dot(state[i, j, k, 0], state[i, jj, k, 0],
+                  state[i, j, k, 1] - state[i, jj, k, 1])
+    jj = (j - 1) % ny
+    e0 += sph_dot(state[i, j, k, 0], state[i, jj, k, 0],
+                  state[i, j, k, 1] - state[i, jj, k, 1])
+
+    if nz > 1:
+        kk = (k + 1) % nz
+        e0 += sph_dot(state[i, j, k, 0], state[i, j, kk, 0],
+                      state[i, j, k, 1] - state[i, j, kk, 1])
+        kk = (k - 1) % nz
+        e0 += sph_dot(state[i, j, k, 0], state[i, j, kk, 0],
+                      state[i, j, k, 1] - state[i, j, kk, 1])
+
+    e0 *= - J / 2
+    e0 += -h * np.cos(state[i, j, k, 0])
+
+    return e0
+
+
+@jit(nopython=True, cache=True)
+def compute_energy(state, nx, ny, nz, J, h):
+    """
+    Compute the energy of the system
+    :return: The value of the energy
+    """
+
+    energy_counter = 0
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        energy_counter += site_energy(i, j, k, state, nx, ny, nz, J, h)
+
+    return np.array(energy_counter)
+
+
+@jit(nopython=True, cache=True)
 def numba_step(state, nx, ny, nz, J, h, beta, energy, total_magnetization):
     """
     Evolve the system computing a step of Metropolis-Hastings Monte Carlo.
     This non OOP function is accelerated trough jit compilation.
     """
+
     # Select a random spin in the system
     i = np.random.randint(0, nx)
     j = np.random.randint(0, ny)
@@ -138,7 +149,7 @@ def numba_step(state, nx, ny, nz, J, h, beta, energy, total_magnetization):
         e0 += sph_dot(state[i, j, k, 0], state[i, j, kk, 0],
                       state[i, j, k, 1] - state[i, j, kk, 1])
 
-    e0 *= -2 * J
+    e0 *= -J
     e0 += -h * np.cos(state[i, j, k, 0])
 
     # Generate a new random direction and compute energy due to the spin in the new direction
@@ -166,7 +177,7 @@ def numba_step(state, nx, ny, nz, J, h, beta, energy, total_magnetization):
         e1 += sph_dot(r_theta, state[i, j, kk, 0],
                       r_phi - state[i, j, kk, 1])
 
-    e1 *= -2 * J
+    e1 *= -J
     e1 += -h * np.cos(r_theta)
 
     # Apply Metropolis algorithm

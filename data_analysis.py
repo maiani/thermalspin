@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
-from heisenberg_system import HeisenbergSystem
 from math_utils import sph2xyz
 
 WORKING_DIRECTORY = "./simulations/"
@@ -62,8 +61,10 @@ def load_set_results(setname):
     for i in range(0, simnumber):
         final_state_loaded, t_loaded, J_loaded, h_loaded, T_loaded, e_loaded, m_loaded = load_results(
             setname + "/" + simlist[i])
+
         if i == 0:
-            final_state = np.zeros(shape=((simnumber,) + final_state_loaded.shape))
+            final_state = []
+            L = np.zeros(shape=(simnumber, 3))
             t = np.zeros(shape=((simnumber,) + t_loaded.shape))
             J = np.zeros(shape=((simnumber,) + J_loaded.shape))
             h = np.zeros(shape=((simnumber,) + h_loaded.shape))
@@ -71,7 +72,8 @@ def load_set_results(setname):
             e = np.zeros(shape=((simnumber,) + e_loaded.shape))
             m = np.zeros(shape=((simnumber,) + m_loaded.shape))
 
-        final_state[i] = final_state_loaded
+        final_state.append(final_state_loaded)
+        L[i] = np.array(final_state_loaded[:, :, :, 0].shape)
         t[i] = t_loaded
         J[i] = J_loaded
         h[i] = h_loaded
@@ -79,99 +81,39 @@ def load_set_results(setname):
         e[i] = e_loaded
         m[i] = m_loaded
 
-    return final_state, t, J, h, T, e, m
+    return final_state, L, t, J, h, T, e, m
 
 
-# Function for computing quantities
-def compute_em(snapshots, params):
-    """
-    Compute energy and magnetization
-    """
+def arrange_set_results(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, final_state_lst):
+    L_new = np.unique(L_lst)
+    T_new = np.unique(T_lst)
+    L_num = L_new.shape[0]
+    T_num = T_new.shape[0]
+    t_num = t_lst.shape[1]
+    sim_num = t_lst.shape[0]
 
-    J = params["J"]
-    h = params["h"]
-    T = params["T"]
-    snapshots_number = snapshots.shape[0]
+    tmp_array = [None] * T_num
+    final_state_new = [tmp_array] * L_num
 
-    energy = np.zeros(shape=snapshots_number)
-    magnetization = np.zeros(shape=(snapshots_number, 3))
+    e_new = np.zeros(shape=(L_num, T_num, t_num))
+    t_new = np.zeros(shape=(L_num, T_num, t_num))
+    J_new = np.zeros(shape=(L_num, T_num, t_num))
+    h_new = np.zeros(shape=(L_num, T_num, t_num))
+    m_new = np.zeros(shape=(L_num, T_num, t_num, 3))
 
-    for i in np.arange(0, snapshots_number):
-        sys = HeisenbergSystem(snapshots[i, :, :, :, :], J=J, h=h, T=T)
-        energy[i] = sys.energy
-        magnetization[i, :] = sys.magnetization
+    for i in range(sim_num):
+        T_idx = int(np.argmax(np.equal(T_new, T_lst[i, 0])))
+        L_idx = int(np.argmax(np.equal(L_new, L_lst[i, 0])))
 
-    return energy, magnetization
+        final_state_new[L_idx][T_idx] = final_state_lst[i]
 
+        e_new[L_idx, T_idx] = e_lst[i]
+        t_new[L_idx, T_idx] = t_lst[i]
+        J_new[L_idx, T_idx] = J_lst[i]
+        h_new[L_idx, T_idx] = h_lst[i]
+        m_new[L_idx, T_idx] = m_lst[i]
 
-def compute_statistics(e, m):
-    e_mean = np.mean(e)
-    e_rmsd = np.sqrt(np.var(e))
-    m_mean = np.mean(m, axis=0)
-    m_rmsd = np.sqrt(np.var(m, axis=0))
-
-    stats = dict(e_mean=e_mean, e_rmsd=e_rmsd, m_mean=m_mean, m_rmsd=m_rmsd)
-    return stats
-
-
-def compute_set_statistics(e, m):
-    set_size = e.shape[0]
-    e_mean = np.zeros(shape=set_size)
-    e_rmsd = np.zeros(shape=set_size)
-    m_mean = np.zeros(shape=(set_size, 3))
-    m_rmsd = np.zeros(shape=(set_size, 3))
-
-    for i in range(0, set_size):
-        stats = compute_statistics(e[i], m[i])
-        e_mean[i] = stats["e_mean"]
-        e_rmsd[i] = stats["e_rmsd"]
-        m_mean[i] = stats["m_mean"]
-        m_rmsd[i] = stats["m_rmsd"]
-
-    return e_mean, e_rmsd, m_mean, m_rmsd
-
-# Functions for plotting
-def plot_energy(snapshots_t, energy):
-    """"
-    Plot energy
-    """
-    fig = plt.figure()
-    ax = fig.gca()
-    line1, = ax.plot(snapshots_t, energy)
-    plt.xlabel("step")
-    plt.ylabel("Energy")
-    plt.title("Total energy")
-    return fig
-
-
-def plot_magnetization(snapshots_t, magnetization):
-    """"
-    Plot energy
-    """
-    fig = plt.figure()
-    ax = fig.gca()
-    line1, = ax.plot(snapshots_t, magnetization[:, 0], label='Mx')
-    line2, = ax.plot(snapshots_t, magnetization[:, 1], label='My')
-    line3, = ax.plot(snapshots_t, magnetization[:, 2], label='Mz')
-    ax.legend()
-    plt.xlabel("step")
-    plt.title("Magnetization")
-    return fig
-
-
-def plot_abs_magnetization(snapshots_t, magnetization):
-    """"
-    Plot energy
-    """
-    fig = plt.figure()
-    ax = fig.gca()
-    line1, = ax.plot(snapshots_t, np.abs(magnetization[:, 0]), label='|Mx|')
-    line2, = ax.plot(snapshots_t, np.abs(magnetization[:, 1]), label='|My|')
-    line3, = ax.plot(snapshots_t, np.abs(magnetization[:, 2]), label='|Mz|')
-    ax.legend()
-    plt.xlabel("step")
-    plt.title("Absolute magnetization")
-    return fig
+    return L_new, T_new, t_new, J_new, h_new, e_new, m_new, final_state_new
 
 
 def plot_state(snapshot):

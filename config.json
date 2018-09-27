@@ -1,0 +1,9 @@
+{
+  "simulations_directory": "./simulations/",
+  "process_number": 7,
+  "delta_snapshots": 5e3,
+  "steps_number": 5e7,
+  "default_J": 1,
+  "default_h": 0,
+  "default_T": 1
+}

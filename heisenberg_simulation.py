@@ -14,6 +14,7 @@ import numpy as np
 from heisenberg_system import HeisenbergSystem
 from math_utils import sph_u_rand
 
+SNAPSHOTS_ARRAY_DIMENSION = int(5e4)
 
 class HeisenbergSimulation:
     """
@@ -26,25 +27,23 @@ class HeisenbergSimulation:
         :param hsys: system to be evolved
         """
 
-        self.SNAPSHOTS_ARRAY_DIMENSION = int(10e3)
-
         self.system = hsys
         self.steps_counter = 0
         self.snapshots_counter = 0
 
         if take_states_snapshots:
             self.snapshots = np.zeros(
-                shape=(self.SNAPSHOTS_ARRAY_DIMENSION, self.system.nx, self.system.ny, self.system.nz, 2))
+                shape=(SNAPSHOTS_ARRAY_DIMENSION, self.system.nx, self.system.ny, self.system.nz, 2))
         else:
             self.snapshots = None
 
-        self.snapshots_t = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_e = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_m = np.zeros(shape=(self.SNAPSHOTS_ARRAY_DIMENSION, 3))
+        self.snapshots_t = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_e = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_m = np.zeros(shape=(SNAPSHOTS_ARRAY_DIMENSION, 3))
 
-        self.snapshots_J = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_T = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_h = np.zeros(shape=self.SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_J = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_T = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_h = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
 
         self.take_snapshot()
 
@@ -95,10 +94,7 @@ class HeisenbergSimulation:
 
 # Functions for initialization and saving to disk the results of a simulation
 
-DEFAULT_PARAMS = dict(J=1, h=0, T=0.5, nsteps=int(5e5), delta_snp=int(1e4))
-
-
-def init_simulation(simdir, nx, ny, nz, params=None, theta_0=None, phi_0=None):
+def init_simulation(simdir, nx, ny, nz, params, theta_0=None, phi_0=None):
     """
     Generate a lattice of spins aligned toward tan axis if specified, random if not
     :param simdir: Directory of the simulation
@@ -109,9 +105,6 @@ def init_simulation(simdir, nx, ny, nz, params=None, theta_0=None, phi_0=None):
     :param phi_0:
     :param theta_0:
     """
-
-    if not params:
-        params = DEFAULT_PARAMS
 
     shutil.rmtree(simdir, ignore_errors=True)
 
