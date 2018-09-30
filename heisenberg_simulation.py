@@ -4,6 +4,7 @@
 """
 Classical Heisenberg model Monte Carlo simulator
 """
+
 import json
 import os
 import shutil
@@ -15,6 +16,7 @@ from heisenberg_system import HeisenbergSystem
 from math_utils import sph_u_rand
 
 SNAPSHOTS_ARRAY_DIMENSION = int(5e4)
+
 
 class HeisenbergSimulation:
     """
@@ -43,7 +45,7 @@ class HeisenbergSimulation:
 
         self.snapshots_J = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
         self.snapshots_T = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_h = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_Hz = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
 
         self.take_snapshot()
 
@@ -61,7 +63,6 @@ class HeisenbergSimulation:
         Take a snapshot of the system, parameters and results
         """
         # TODO: Fix for snapshots exceeding the array dimension
-        print(f"Step number: {self.steps_counter}")
 
         if self.snapshots is not None:
             self.snapshots[self.snapshots_counter, :, :, :, :] = self.system.state.copy()
@@ -72,21 +73,21 @@ class HeisenbergSimulation:
 
         self.snapshots_J[self.snapshots_counter] = self.system.J
         self.snapshots_T[self.snapshots_counter] = self.system.T
-        self.snapshots_h[self.snapshots_counter] = self.system.h
+        self.snapshots_Hz[self.snapshots_counter] = self.system.Hz
 
         self.snapshots_counter += 1
 
-    def run_with_snapshots(self, nstep, delta_snapshots):
+    def run_with_snapshots(self, steps_number, delta_snapshots):
         """
         Evolve the system while taking snapshots
-        :param nstep: Number of steps to be computed
+        :param steps_number: Number of steps to be computed
         :param delta_snapshots: Distance between snapshots
         """
 
-        if nstep % delta_snapshots != 0:
-            raise Exception("nstep must be multiple of delta_snapshots")
+        if steps_number % delta_snapshots != 0:
+            raise Exception("steps_number must be multiple of delta_snapshots")
 
-        nsnapshots = int(nstep / delta_snapshots)
+        nsnapshots = int(steps_number / delta_snapshots)
         for t in range(0, nsnapshots):
             self.run(delta_snapshots)
             self.take_snapshot()
@@ -122,11 +123,11 @@ def init_simulation(simdir, nx, ny, nz, params, theta_0=None, phi_0=None):
 
     os.makedirs(simdir)
     params_file = open(simdir + "params.json", "w")
-    json.dump(params, params_file, sort_keys=True, indent=4)
+    json.dump(params, params_file, indent=2)
     np.save(simdir + "state.npy", state)
 
 
-def run_simulation(simdir, save_snapshots=False):
+def run_simulation(simdir, save_snapshots=False, verbose=True):
     """
     Run a simulation and save to disk the results
     :param simdir: the directory of the simulation
@@ -144,20 +145,36 @@ def run_simulation(simdir, save_snapshots=False):
     else:
         raise Exception("Missing state.npy file")
 
-    J = params["J"]
-    h = params["h"]
-    T = params["T"]
-    nsteps = params["nsteps"]
-    delta_snp = params["delta_snp"]
+    param_J = np.array(params["param_J"])
+    param_Hz = np.array(params["param_Hz"])
+    param_T = np.array(params["param_T"])
+    steps_number = params["steps_number"]
+    delta_snapshots = params["delta_snapshots"]
 
-    sys = HeisenbergSystem(state, J, h, T)
-
+    sys = HeisenbergSystem(state, param_J[0], param_Hz[0], param_T[0])
     hsim = HeisenbergSimulation(sys, take_states_snapshots=save_snapshots)
-    start = time.time()
-    hsim.run_with_snapshots(nsteps, delta_snp)
-    end = time.time()
-    run_time = end - start
-    print("Simulation completed in {0} seconds".format(run_time))
+
+    for i in range(param_T.shape[0]):
+        if verbose:
+            print(f"Simulation stage:   {i}\n"
+                  f"Temperature:        {param_T[i]}\n"
+                  f"Hz:                 {param_Hz[i]}\n"
+                  f"Steps number:       {steps_number}\n"
+                  f"Delta snapshots:    {delta_snapshots}\n"
+                  f"Starting...", end="")
+
+        hsim.system.J = param_J[i]
+        hsim.system.T = param_T[i]
+        hsim.system.Hz = param_Hz[i]
+        start_time = time.time()
+        hsim.run_with_snapshots(steps_number, delta_snapshots)
+        end_time = time.time()
+        run_time = end_time - start_time
+
+        if verbose:
+            print("completed in {0} seconds\n".format(run_time))
+        else:
+            print(f"Simulation {simdir} completed in {run_time} seconds\n")
 
     print("Saving results ...", end="")
     start = time.time()
@@ -174,7 +191,7 @@ def run_simulation(simdir, save_snapshots=False):
     new_snapshots_params = np.zeros(shape=(hsim.snapshots_counter, 4))
     new_snapshots_params[:, 0] = hsim.snapshots_t[:hsim.snapshots_counter]
     new_snapshots_params[:, 1] = hsim.snapshots_J[:hsim.snapshots_counter]
-    new_snapshots_params[:, 2] = hsim.snapshots_h[:hsim.snapshots_counter]
+    new_snapshots_params[:, 2] = hsim.snapshots_Hz[:hsim.snapshots_counter]
     new_snapshots_params[:, 3] = hsim.snapshots_T[:hsim.snapshots_counter]
 
     # If old data is found, append the new one

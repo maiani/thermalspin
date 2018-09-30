@@ -2,14 +2,12 @@
 # TODO
 
 ## Analysis side
-- Critical exponent analysis
+- Improve critical exponent analysis
 - User interface
 
 # Physics side
 - Add indirect exchange interaction 
 
 ## Performance side
-- Generic optimization
-- CUDA
-
+- Make the program run on GPU
 

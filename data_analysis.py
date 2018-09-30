@@ -13,7 +13,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from math_utils import sph2xyz
 
-WORKING_DIRECTORY = "./simulations/"
+SIMULATIONS_DIRECTORY = "./simulations/"
 
 
 def load_results(simname):
@@ -23,7 +23,7 @@ def load_results(simname):
     :return: final_state, t, e, m
     """
 
-    simdir = "./simulations/{0}/".format(simname)
+    simdir = SIMULATIONS_DIRECTORY + f"{simname}/"
 
     final_state = np.load(simdir + "state.npy")
     results = np.load(simdir + "results.npy")
@@ -42,13 +42,13 @@ def load_results(simname):
 
 
 def load_snapshots(simname):
-    simdir = "./simulations/{0}/".format(simname)
+    simdir = SIMULATIONS_DIRECTORY + f"{simname}/"
     snapshots = np.load(simdir + "snapshots.npy")
     return snapshots
 
 
 def load_set_results(setname):
-    filelist = os.listdir(WORKING_DIRECTORY + setname + "/")
+    filelist = os.listdir(SIMULATIONS_DIRECTORY + setname + "/")
     simlist = []
 
     for f in filelist:

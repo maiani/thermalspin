@@ -15,9 +15,9 @@ class HeisenbergSystem:
     This class represent a system described by an Heisenberg Hamiltonian, also known as O(3) model
     """
 
-    def __init__(self, state, J, h, T):
+    def __init__(self, state, J, Hz, T):
         self.J = J
-        self.h = h
+        self.Hz = Hz
         self.T = T
         self.beta = 1 / T
 
@@ -28,7 +28,7 @@ class HeisenbergSystem:
         self.nspin = self.nx * self.ny * self.nz
 
         # Compute energy and magnetization of the initial state
-        self.energy = compute_energy(self.state, self.nx, self.ny, self.nz, J, h)
+        self.energy = compute_energy(self.state, self.nx, self.ny, self.nz, J, Hz)
         self.total_magnetization = compute_magnetization(self.state, self.nx, self.ny, self.nz)
 
     @property
@@ -44,7 +44,7 @@ class HeisenbergSystem:
         Evolve the system computing a step of Metropolis-Hastings Monte Carlo.
         It actually calls the non-object oriented function.
         """
-        s, e, m = numba_step(self.state, self.nx, self.ny, self.nz, self.J, self.h, self.beta, self.energy,
+        s, e, m = numba_step(self.state, self.nx, self.ny, self.nz, self.J, self.Hz, self.beta, self.energy,
                              self.total_magnetization)
         self.state = s
         self.energy = e
