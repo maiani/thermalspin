@@ -9,6 +9,16 @@ from numba import jit
 
 
 @jit(nopython=True, cache=True)
+def xyz2sph(v):
+    """
+    Convert a unit vector from cartesian coordinates to spherical coordinates
+    :param v: unit vector
+    :return: [theta, phi] polar coordinates
+    """
+
+    return np.array([np.arccos(v[2]), np.arctan2(v[1], v[0])])
+
+@jit(nopython=True, cache=True)
 def sph2xyz(theta, phi):
     """
     Convert spherical coordinates to unit vector

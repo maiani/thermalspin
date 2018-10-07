@@ -135,7 +135,48 @@ def plot_state(snapshot):
     for i, j, k in np.ndindex(nx, ny, nz):
         u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(snapshot[i, j, k, 0], snapshot[i, j, k, 1])
 
+    # c = np.zeros(shape=(nx*3, ny*3, nz*3, 3))
+    # c[:, :, :, 0] = np.tile(u, (3, 3, 3))
+    # c[:, :, :, 1] = np.tile(v, (3, 3, 3))
+    # c[:, :, :, 2] = np.tile(w, (3, 3, 3))
+    # c = np.abs(c)
+
     fig = plt.figure()
     ax: Axes3D = fig.gca(projection='3d')
-    ax.quiver(x, y, z, u, v, w, pivot='middle')
+    ax.quiver(x, y, z, u, v, w, pivot='middle')  # , color=c)
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
+    plt.show()
+
+
+def plot_spin_directions(snapshot):
+    """
+    Plot spherical representation of spins
+    """
+    nx = snapshot.shape[0]
+    ny = snapshot.shape[1]
+    nz = snapshot.shape[2]
+
+    points = np.zeros(shape=(nx * ny * nz, 3))
+
+    n = 0
+    for i, j, k in np.ndindex(nx, ny, nz):
+        points[n] = sph2xyz(snapshot[i, j, k, 0], snapshot[i, j, k, 1])
+        n += 1
+
+    fig = plt.figure()
+    ax: Axes3D = fig.gca(projection='3d')
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=np.abs(points))
+
+    ax.set_xlim([-1.1, 1.1])
+    ax.set_ylim([-1.1, 1.1])
+    ax.set_zlim([-1.1, 1.1])
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
     plt.show()

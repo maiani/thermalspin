@@ -10,7 +10,8 @@ import json
 import os
 import sys
 
-from heisenberg_simulation import init_simulation, run_simulation
+from heisenberg_simulation import init_simulation_tilted, init_simulation_random, init_simulation_aligned, \
+    run_simulation
 
 CONFIG_FILE_NAME = "config.json"
 
@@ -51,7 +52,8 @@ def usage():
     -r, --run=SIMNAME                 Run a simulation named SIMNAME
     -d, --dimensions=SIZE             Generate a default simulation with SIZE specified e.g. 10x10x10
     -m, --magnetization=DIRECTION     Initial magnetization along DIRECTION specified like 0,0
-    -Hz, --help                        Shows this message
+    --tilted                          Tilted initial position
+    -h, --help                        Shows this message
     """)
 
 
@@ -62,9 +64,10 @@ if __name__ == "__main__":
     simname = None
     nx, ny, nz = (None, None, None)
     theta_0, phi_0 = (None, None)
+    tilted = False
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hr:i:d:m:", ["help", "initialize=", "run=", "dimensions="])
+        opts, args = getopt.getopt(sys.argv[1:], "hr:i:d:m:", ["help", "initialize=", "run=", "dimensions=", "tilted"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -82,24 +85,34 @@ if __name__ == "__main__":
             nx, ny, nz = arg.split("x")
         elif opt in ("-m", "--magnetization"):
             theta_0, phi_0 = arg.split(",")
+        elif opt in ("--tilted"):
+            tilted = True
 
     if mode == "run":
-        print(f"Running simulation {simname}")
-        run_simulation(SIMULATIONS_DIRECTORY + simname + "/")
+        print(f"Running simulation {simname}\n")
+        run_simulation(SIMULATIONS_DIRECTORY + simname + "/", verbose=True)
     elif mode == "init":
-        if theta_0 is None:
-            init_simulation(SIMULATIONS_DIRECTORY + simname + "/", int(nx), int(ny), int(nz), params=DEFAULT_PARAMS)
-            print(f"Default simulation {simname} generated withe default params. \n"
+        if tilted:
+            init_simulation_tilted(SIMULATIONS_DIRECTORY + simname + "/", int(nx), int(ny), int(nz),
+                                   params=DEFAULT_PARAMS)
+            print(f"Simulation {simname} generated with default params. \n"
                   f"Lattice has dimensions {nx}x{ny}x{nz} \n"
-                  f"Random initial magnetization")
+                  f"Tilted initial magnetization\n")
+
+        elif theta_0 is None:
+            init_simulation_random(SIMULATIONS_DIRECTORY + simname + "/", int(nx), int(ny), int(nz),
+                                   params=DEFAULT_PARAMS)
+            print(f"Simulation {simname} generated with default params. \n"
+                  f"Lattice has dimensions {nx}x{ny}x{nz} \n"
+                  f"Random initial magnetization\n")
         else:
-            init_simulation(SIMULATIONS_DIRECTORY + simname + "/", int(nx), int(ny), int(nz), theta_0=int(theta_0),
-                            phi_0=int(phi_0), params=DEFAULT_PARAMS)
-            print(f"Default simulation {simname} generated withe default params. \n"
+            init_simulation_aligned(SIMULATIONS_DIRECTORY + simname + "/", int(nx), int(ny), int(nz),
+                                    params=DEFAULT_PARAMS, theta_0=int(theta_0), phi_0=int(phi_0))
+            print(f"Default simulation {simname} generated with default params. \n"
                   f"Lattice has dimensions {nx}x{ny}x{nz} \n"
-                  f"Initial magnetization ({theta_0},{phi_0})")
+                  f"Initial magnetization ({theta_0},{phi_0})\n")
     else:
         usage()
         sys.exit(2)
 
-    print("Finished")
+    print("Finished\n")

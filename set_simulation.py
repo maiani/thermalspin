@@ -13,7 +13,8 @@ from multiprocessing.pool import Pool
 
 import numpy as np
 
-from heisenberg_simulation import init_simulation, run_simulation
+from heisenberg_simulation import init_simulation_tilted, init_simulation_aligned, init_simulation_random, \
+    run_simulation
 
 CONFIG_FILE_NAME = "config.json"
 
@@ -22,7 +23,7 @@ SIMULATIONS_DIRECTORY = None
 DEFAULT_PARAMS = None
 
 
-def init_set(setname, T, L, theta_0=None, phi_0=None, ):
+def init_set(setname, J, T, L, theta_0=None, phi_0=None, tilted=False):
     simdir_list = []
     params_list = []
     L_list = []
@@ -30,16 +31,27 @@ def init_set(setname, T, L, theta_0=None, phi_0=None, ):
     for i, j in np.ndindex((T.shape[0], L.shape[0])):
         simdir_list.append(SIMULATIONS_DIRECTORY + setname + "/" + setname + "_T" + str(T[i]) + "_L" + str(L[j]) + "/")
         params = DEFAULT_PARAMS
-        params["param_T"] = [float(T[i])]
+        params["param_T"] = [T[i]]
+        params["param_J"] = J
         params_list.append(params.copy())
         L_list.append(L[j].copy())
 
-    for i in range(len(simdir_list)):
-        init_simulation(simdir_list[i], L_list[i], L_list[i], L_list[i], params=params_list[i], theta_0=theta_0,
-                        phi_0=phi_0)
+    if tilted:
+        for i in range(len(simdir_list)):
+            init_simulation_tilted(simdir_list[i], nx=L_list[i], ny=L_list[i], nz=L_list[i], params=params_list[i])
+
+    elif theta_0 is None:
+        for i in range(len(simdir_list)):
+            init_simulation_random(simdir_list[i], nx=L_list[i], ny=L_list[i], nz=L_list[i], params=params_list[i])
+
+    else:
+        for i in range(len(simdir_list)):
+            init_simulation_aligned(simdir_list[i], nx=L_list[i], ny=L_list[i], nz=L_list[i], params=params_list[i],
+                                    theta_0=theta_0, phi_0=phi_0)
 
 
-def run_simulation_wrapper(simdir): run_simulation(simdir, verbose=False)
+def run_simulation_wrapper(simdir):
+    run_simulation(simdir, verbose=False)
 
 
 def run_set(setname):
@@ -86,28 +98,31 @@ def usage():
     -L                                Specify the side dimension of the lattices size like 6,8,10 
     -m, --magnetization=DIRECTION     Initial magnetization along DIRECTION specified like 0,0
     -T, --temperature=TEMP            Specify the range of temperature with TEMP like T_initial,T_final,dT e.g 0.5,3.5,1  
-    -Hz, --help                        Shows this message
+    -h, --help                        Shows this message
     """)
 
 
 if __name__ == "__main__":
+    read_config_file()
+
     mode = None
     setname = None
     L = []
-    T = []
+    J = DEFAULT_PARAMS["param_J"]
+    T = DEFAULT_PARAMS["param_T"]
     theta_0, phi_0 = (None, None)
     Ti, Tf, dt = (None, None, None)
-
-    read_config_file()
+    tilted = False
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hr:i:L:m:T:",
-                                   ["help", "initialize=", "run=", "dimensions=", "temperatures="])
+        opts, args = getopt.getopt(sys.argv[1:], "hr:i:L:m:T:J:",
+                                   ["help", "initialize=", "run=", "dimensions=", "temperatures=", 'tilted'])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
+
     for opt, arg in opts:
-        if opt == '-Hz':
+        if opt in ("-h", "--help"):
             usage()
             sys.exit()
         elif opt in ("-r", "--run"):
@@ -126,7 +141,11 @@ if __name__ == "__main__":
             Ti = float(Ti)
             Tf = float(Tf)
             dT = float(dT)
-            T = np.arange(Ti, Tf + 00.1, dT)
+            T = np.arange(Ti, Tf, dT)
+        elif opt in "-J":
+            J = float(arg)
+        elif opt in "--tilted":
+            tilted = True
 
     L = np.array(L)
     if mode == "run":
@@ -134,9 +153,9 @@ if __name__ == "__main__":
         run_set(setname)
     elif mode == "init":
         if theta_0 is None:
-            init_set(setname, T, L)
+            init_set(setname, J, T, L)
         else:
-            init_set(setname, T, L, theta_0, phi_0)
+            init_set(setname, J, T, L, theta_0, phi_0, tilted=tilted)
     else:
         usage()
         sys.exit(2)

@@ -71,32 +71,33 @@ def compute_magnetization(state, nx, ny, nz):
 
 @jit(nopython=True, cache=True)
 def site_energy(i, j, k, state, nx, ny, nz, J, h):
-    e0 = 0
+    energy = 0.0
+
     ii = (i + 1) % nx
-    e0 += sph_dot(state[i, j, k, 0], state[ii, j, k, 0],
-                  state[i, j, k, 1] - state[ii, j, k, 1])
+    energy += sph_dot(state[i, j, k, 0], state[ii, j, k, 0],
+                      state[i, j, k, 1] - state[ii, j, k, 1])
     ii = (i - 1) % nx
-    e0 += sph_dot(state[i, j, k, 0], state[ii, j, k, 0],
-                  state[i, j, k, 1] - state[ii, j, k, 1])
+    energy += sph_dot(state[i, j, k, 0], state[ii, j, k, 0],
+                      state[i, j, k, 1] - state[ii, j, k, 1])
     jj = (j + 1) % ny
-    e0 += sph_dot(state[i, j, k, 0], state[i, jj, k, 0],
-                  state[i, j, k, 1] - state[i, jj, k, 1])
+    energy += sph_dot(state[i, j, k, 0], state[i, jj, k, 0],
+                      state[i, j, k, 1] - state[i, jj, k, 1])
     jj = (j - 1) % ny
-    e0 += sph_dot(state[i, j, k, 0], state[i, jj, k, 0],
-                  state[i, j, k, 1] - state[i, jj, k, 1])
+    energy += sph_dot(state[i, j, k, 0], state[i, jj, k, 0],
+                      state[i, j, k, 1] - state[i, jj, k, 1])
 
     if nz > 1:
         kk = (k + 1) % nz
-        e0 += sph_dot(state[i, j, k, 0], state[i, j, kk, 0],
-                      state[i, j, k, 1] - state[i, j, kk, 1])
+        energy += sph_dot(state[i, j, k, 0], state[i, j, kk, 0],
+                          state[i, j, k, 1] - state[i, j, kk, 1])
         kk = (k - 1) % nz
-        e0 += sph_dot(state[i, j, k, 0], state[i, j, kk, 0],
-                      state[i, j, k, 1] - state[i, j, kk, 1])
+        energy += sph_dot(state[i, j, k, 0], state[i, j, kk, 0],
+                          state[i, j, k, 1] - state[i, j, kk, 1])
 
-    e0 *= - J / 2
-    e0 += -h * np.cos(state[i, j, k, 0])
+    energy *= - J / 2
+    energy += -h * np.cos(state[i, j, k, 0])
 
-    return e0
+    return energy
 
 
 @jit(nopython=True, cache=True)
@@ -106,12 +107,12 @@ def compute_energy(state, nx, ny, nz, J, h):
     :return: The value of the energy
     """
 
-    energy_counter = 0
+    energy_counter = 0.0
 
     for i, j, k in np.ndindex(nx, ny, nz):
         energy_counter += site_energy(i, j, k, state, nx, ny, nz, J, h)
 
-    return np.array(energy_counter)
+    return energy_counter
 
 
 @jit(nopython=True, cache=True)

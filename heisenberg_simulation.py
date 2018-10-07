@@ -13,7 +13,8 @@ import time
 import numpy as np
 
 from heisenberg_system import HeisenbergSystem
-from math_utils import sph_u_rand
+from kent_distribution.kent_distribution import kent2
+from math_utils import sph_u_rand, xyz2sph
 
 SNAPSHOTS_ARRAY_DIMENSION = int(5e4)
 
@@ -77,7 +78,7 @@ class HeisenbergSimulation:
 
         self.snapshots_counter += 1
 
-    def run_with_snapshots(self, steps_number, delta_snapshots):
+    def run_with_snapshots(self, steps_number, delta_snapshots, verbose=False):
         """
         Evolve the system while taking snapshots
         :param steps_number: Number of steps to be computed
@@ -91,13 +92,15 @@ class HeisenbergSimulation:
         for t in range(0, nsnapshots):
             self.run(delta_snapshots)
             self.take_snapshot()
+            if verbose:
+                print(f"Step number {self.steps_counter}", end="\r")
 
 
 # Functions for initialization and saving to disk the results of a simulation
 
-def init_simulation(simdir, nx, ny, nz, params, theta_0=None, phi_0=None):
+def init_simulation_aligned(simdir, nx, ny, nz, params, theta_0=None, phi_0=None):
     """
-    Generate a lattice of spins aligned toward tan axis if specified, random if not
+    Generate a lattice of spins aligned toward an axis
     :param simdir: Directory of the simulation
     :param nx: Number of x cells
     :param ny: Number of y cells
@@ -106,20 +109,62 @@ def init_simulation(simdir, nx, ny, nz, params, theta_0=None, phi_0=None):
     :param phi_0:
     :param theta_0:
     """
+    shutil.rmtree(simdir, ignore_errors=True)
+
+    state = np.ones(shape=(nx, ny, nz, 2))
+    state[:, :, :, 0] = state[:, :, :, 0] * theta_0
+    state[:, :, :, 1] = state[:, :, :, 1] * phi_0
+
+    os.makedirs(simdir)
+    params_file = open(simdir + "params.json", "w")
+    json.dump(params, params_file, indent=2)
+    np.save(simdir + "state.npy", state)
+
+
+def init_simulation_tilted(simdir, nx, ny, nz, params):
+    """
+    Generate a lattice of spins aligned toward tan axis if specified, random if not
+    :param simdir: Directory of the simulation
+    :param nx: Number of x cells
+    :param ny: Number of y cells
+    :param nz: Number of z cells
+    :param params: parameters of the simulation
+    """
 
     shutil.rmtree(simdir, ignore_errors=True)
 
-    if theta_0 is None:
-        state = np.zeros(shape=(nx, ny, nz, 2))
-        for i, j, k in np.ndindex(nx, ny, nz):
-            theta_r, phi_r = sph_u_rand()
-            state[i, j, k, 0] = theta_r
-            state[i, j, k, 1] = phi_r
+    state = np.ones(shape=(nx, ny, nz, 2))
 
-    else:
-        state = np.ones(shape=(nx, ny, nz, 2))
-        state[:, :, :, 0] = state[:, :, :, 0] * theta_0
-        state[:, :, :, 1] = state[:, :, :, 1] * phi_0
+    gamma1 = np.array([0, 0, 1], dtype=np.float)
+    gamma2 = np.array([0, 1, 0], dtype=np.float)
+    gamma3 = np.array([1, 0, 0], dtype=np.float)
+    kent = kent2(gamma1, gamma2, gamma3, kappa=20, beta=0)
+
+    for i, j, k in np.ndindex((nx, ny, nz)):
+        state[i, j, k, :] = xyz2sph(kent.rvs())
+
+    os.makedirs(simdir)
+    params_file = open(simdir + "params.json", "w")
+    json.dump(params, params_file, indent=2)
+    np.save(simdir + "state.npy", state)
+
+
+def init_simulation_random(simdir, nx, ny, nz, params):
+    """
+    Generate a lattice of spins aligned toward tan axis if specified, random if not
+    :param simdir: Directory of the simulation
+    :param nx: Number of x cells
+    :param ny: Number of y cells
+    :param nz: Number of z cells
+    :param params: parameters of the simulation
+    """
+    shutil.rmtree(simdir, ignore_errors=True)
+
+    state = np.zeros(shape=(nx, ny, nz, 2))
+    for i, j, k in np.ndindex(nx, ny, nz):
+        theta_r, phi_r = sph_u_rand()
+        state[i, j, k, 0] = theta_r
+        state[i, j, k, 1] = phi_r
 
     os.makedirs(simdir)
     params_file = open(simdir + "params.json", "w")
@@ -155,26 +200,21 @@ def run_simulation(simdir, save_snapshots=False, verbose=True):
     hsim = HeisenbergSimulation(sys, take_states_snapshots=save_snapshots)
 
     for i in range(param_T.shape[0]):
-        if verbose:
-            print(f"Simulation stage:   {i}\n"
-                  f"Temperature:        {param_T[i]}\n"
-                  f"Hz:                 {param_Hz[i]}\n"
-                  f"Steps number:       {steps_number}\n"
-                  f"Delta snapshots:    {delta_snapshots}\n"
-                  f"Starting...", end="")
+        print(f"Simulation stage:   {i}\n"
+              f"Temperature:        {param_T[i]}\n"
+              f"Hz:                 {param_Hz[i]}\n"
+              f"Steps number:       {steps_number}\n"
+              f"Delta snapshots:    {delta_snapshots}\n")
 
         hsim.system.J = param_J[i]
         hsim.system.T = param_T[i]
         hsim.system.Hz = param_Hz[i]
         start_time = time.time()
-        hsim.run_with_snapshots(steps_number, delta_snapshots)
+        hsim.run_with_snapshots(steps_number, delta_snapshots, verbose=verbose)
         end_time = time.time()
         run_time = end_time - start_time
 
-        if verbose:
-            print("completed in {0} seconds\n".format(run_time))
-        else:
-            print(f"Simulation {simdir} completed in {run_time} seconds\n")
+        print(f"Stage completed in {run_time} seconds\n")
 
     print("Saving results ...", end="")
     start = time.time()

@@ -5,7 +5,7 @@
 - Improve critical exponent analysis
 - User interface
 
-# Physics side
+## Physics side
 - Add indirect exchange interaction 
 
 ## Performance side
