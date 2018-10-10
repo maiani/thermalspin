@@ -8,11 +8,13 @@ Run multiple instance of Heisenberg
 import getopt
 import json
 import os
+import shutil
 import sys
 from multiprocessing.pool import Pool
 
 import numpy as np
 
+from counter import Counter
 from heisenberg_simulation import init_simulation_tilted, init_simulation_aligned, init_simulation_random, \
     run_simulation
 
@@ -27,9 +29,11 @@ def init_set(setname, J, T, L, theta_0=None, phi_0=None, tilted=False):
     simdir_list = []
     params_list = []
     L_list = []
+    set_directory = SIMULATIONS_DIRECTORY + setname + "/"
+    shutil.rmtree(set_directory, ignore_errors=True)
 
     for i, j in np.ndindex((T.shape[0], L.shape[0])):
-        simdir_list.append(SIMULATIONS_DIRECTORY + setname + "/" + setname + "_T" + str(T[i]) + "_L" + str(L[j]) + "/")
+        simdir_list.append(set_directory + setname + "_T" + str(T[i]) + "_L" + str(L[j]) + "/")
         params = DEFAULT_PARAMS
         params["param_T"] = [T[i]]
         params["param_J"] = J
@@ -50,8 +54,17 @@ def init_set(setname, J, T, L, theta_0=None, phi_0=None, tilted=False):
                                     theta_0=theta_0, phi_0=phi_0)
 
 
+simulations_number = 0
+completed_simulations_counter = Counter()
+
+
 def run_simulation_wrapper(simdir):
     run_simulation(simdir, verbose=False)
+
+    completed_simulations_counter.increment()
+    completed_simulations_number = completed_simulations_counter.value()
+
+    print(f"Completed simulations {completed_simulations_number}/{simulations_number}")
 
 
 def run_set(setname):
@@ -61,6 +74,10 @@ def run_set(setname):
     for filename in filelist:
         if filename.find(setname) >= 0:
             simdir_list.append(SIMULATIONS_DIRECTORY + setname + "/" + filename + "/")
+
+    global simulations_number
+    simulations_number = len(simdir_list)
+
 
     pool = Pool(processes=PROCESSES_NUMBER)
     pool.map(run_simulation_wrapper, simdir_list)
@@ -98,6 +115,7 @@ def usage():
     -L                                Specify the side dimension of the lattices size like 6,8,10 
     -m, --magnetization=DIRECTION     Initial magnetization along DIRECTION specified like 0,0
     -T, --temperature=TEMP            Specify the range of temperature with TEMP like T_initial,T_final,dT e.g 0.5,3.5,1  
+    --tilted                          Tilted initial condition
     -h, --help                        Shows this message
     """)
 
@@ -153,7 +171,7 @@ if __name__ == "__main__":
         run_set(setname)
     elif mode == "init":
         if theta_0 is None:
-            init_set(setname, J, T, L)
+            init_set(setname, J, T, L, tilted=tilted)
         else:
             init_set(setname, J, T, L, theta_0, phi_0, tilted=tilted)
     else:

@@ -135,15 +135,15 @@ def plot_state(snapshot):
     for i, j, k in np.ndindex(nx, ny, nz):
         u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(snapshot[i, j, k, 0], snapshot[i, j, k, 1])
 
-    # c = np.zeros(shape=(nx*3, ny*3, nz*3, 3))
-    # c[:, :, :, 0] = np.tile(u, (3, 3, 3))
-    # c[:, :, :, 1] = np.tile(v, (3, 3, 3))
-    # c[:, :, :, 2] = np.tile(w, (3, 3, 3))
-    # c = np.abs(c)
+    c = np.zeros(shape=(nx * 3, ny * 3, nz * 3, 3))
+    c[:, :, :, 0] = np.tile(u, (3, 3, 3))
+    c[:, :, :, 1] = np.tile(v, (3, 3, 3))
+    c[:, :, :, 2] = np.tile(w, (3, 3, 3))
+    c = np.abs(c)
 
     fig = plt.figure()
     ax: Axes3D = fig.gca(projection='3d')
-    ax.quiver(x, y, z, u, v, w, pivot='middle')  # , color=c)
+    ax.quiver(x, y, z, u, v, w, pivot='middle', color=c)
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')
