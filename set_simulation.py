@@ -25,17 +25,18 @@ SIMULATIONS_DIRECTORY = None
 DEFAULT_PARAMS = None
 
 
-def init_set(setname, J, T, L, theta_0=None, phi_0=None, tilted=False):
+def init_set(setname, J, Hz, T, L, theta_0=None, phi_0=None, tilted=False):
     simdir_list = []
     params_list = []
     L_list = []
     set_directory = SIMULATIONS_DIRECTORY + setname + "/"
     shutil.rmtree(set_directory, ignore_errors=True)
 
-    for i, j in np.ndindex((T.shape[0], L.shape[0])):
-        simdir_list.append(set_directory + setname + "_T" + str(T[i]) + "_L" + str(L[j]) + "/")
+    for i, j, k in np.ndindex((T.shape[0], L.shape[0], Hz.shape[0])):
+        simdir_list.append(set_directory + setname + f"_T{int(T[i]*100)/100}_L{L[j]}_H{int(Hz[k]*100)/100}/")
         params = DEFAULT_PARAMS
         params["param_T"] = [T[i]]
+        params["param_Hz"] = [Hz[k]]
         params["param_J"] = J
         params_list.append(params.copy())
         L_list.append(L[j].copy())
@@ -78,7 +79,6 @@ def run_set(setname):
     global simulations_number
     simulations_number = len(simdir_list)
 
-
     pool = Pool(processes=PROCESSES_NUMBER)
     pool.map(run_simulation_wrapper, simdir_list)
 
@@ -115,6 +115,7 @@ def usage():
     -L                                Specify the side dimension of the lattices size like 6,8,10 
     -m, --magnetization=DIRECTION     Initial magnetization along DIRECTION specified like 0,0
     -T, --temperature=TEMP            Specify the range of temperature with TEMP like T_initial,T_final,dT e.g 0.5,3.5,1  
+    -H                                Specify the range of external field  like H_initial,H_final, dH
     --tilted                          Tilted initial condition
     -h, --help                        Shows this message
     """)
@@ -128,12 +129,13 @@ if __name__ == "__main__":
     L = []
     J = DEFAULT_PARAMS["param_J"]
     T = DEFAULT_PARAMS["param_T"]
+    Hz = DEFAULT_PARAMS["param_Hz"]
     theta_0, phi_0 = (None, None)
     Ti, Tf, dt = (None, None, None)
     tilted = False
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hr:i:L:m:T:J:",
+        opts, args = getopt.getopt(sys.argv[1:], "hr:i:L:m:T:J:H:",
                                    ["help", "initialize=", "run=", "dimensions=", "temperatures=", 'tilted'])
     except getopt.GetoptError:
         usage()
@@ -155,11 +157,23 @@ if __name__ == "__main__":
         elif opt in ("-m", "--magnetization"):
             theta_0, phi_0 = arg.split(",")
         elif opt in ("-T", "--temperature"):
-            Ti, Tf, dT = arg.split(",")
-            Ti = float(Ti)
-            Tf = float(Tf)
-            dT = float(dT)
-            T = np.arange(Ti, Tf, dT)
+            if len(arg.split(",")) == 3:
+                Ti, Tf, dT = arg.split(",")
+                Ti = float(Ti)
+                Tf = float(Tf)
+                dT = float(dT)
+                T = np.arange(Ti, Tf, dT)
+            elif len(arg.split(",")) == 1:
+                T = np.array([float(arg)])
+        elif opt in ("-H"):
+            if len(arg.split(",")) == 3:
+                Hi, Hf, dH = arg.split(",")
+                Hi = float(Hi)
+                Hf = float(Hf)
+                dH = float(dH)
+                Hz = np.arange(Hi, Hf, dH)
+            elif len(arg.split(",")) == 1:
+                H = np.array([float(arg)])
         elif opt in "-J":
             J = float(arg)
         elif opt in "--tilted":
@@ -171,9 +185,9 @@ if __name__ == "__main__":
         run_set(setname)
     elif mode == "init":
         if theta_0 is None:
-            init_set(setname, J, T, L, tilted=tilted)
+            init_set(setname, J, Hz, T, L, tilted=tilted)
         else:
-            init_set(setname, J, T, L, theta_0, phi_0, tilted=tilted)
+            init_set(setname, J, Hz, T, L, theta_0, phi_0, tilted=tilted)
     else:
         usage()
         sys.exit(2)

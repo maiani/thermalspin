@@ -84,7 +84,7 @@ def load_set_results(setname):
     return final_state, L, t, J, h, T, e, m
 
 
-def arrange_set_results(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, final_state_lst):
+def arrange_set_results_LT(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, final_state_lst):
     L_new = np.unique(L_lst)
     T_new = np.unique(T_lst)
     L_num = L_new.shape[0]
@@ -116,6 +116,38 @@ def arrange_set_results(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, final_s
     return L_new, T_new, t_new, J_new, h_new, e_new, m_new, final_state_new
 
 
+def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, final_state_lst):
+    L_new = np.unique(L_lst)
+    H_new = np.unique(H_lst)
+
+    L_num = L_new.shape[0]
+    H_num = H_new.shape[0]
+    t_num = t_lst.shape[1]
+    sim_num = t_lst.shape[0]
+
+    tmp_array = [None] * H_num
+    final_state_new = [tmp_array] * L_num
+
+    e_new = np.zeros(shape=(L_num, H_num, t_num))
+    t_new = np.zeros(shape=(L_num, H_num, t_num))
+    J_new = np.zeros(shape=(L_num, H_num, t_num))
+    T_new = np.zeros(shape=(L_num, H_num, t_num))
+    m_new = np.zeros(shape=(L_num, H_num, t_num, 3))
+
+    for i in range(sim_num):
+        Hz_idx = int(np.argmax(np.equal(H_new, H_lst[i, 0])))
+        L_idx = int(np.argmax(np.equal(L_new, L_lst[i, 0])))
+
+        final_state_new[L_idx][Hz_idx] = final_state_lst[i]
+
+        e_new[L_idx, Hz_idx] = e_lst[i]
+        t_new[L_idx, Hz_idx] = t_lst[i]
+        J_new[L_idx, Hz_idx] = J_lst[i]
+        T_new[L_idx, Hz_idx] = T_lst[i]
+        m_new[L_idx, Hz_idx] = m_lst[i]
+
+    return L_new, H_new, t_new, J_new, T_new, e_new, m_new, final_state_new
+
 def plot_state(snapshot):
     """
     Plot system state
@@ -135,22 +167,30 @@ def plot_state(snapshot):
     for i, j, k in np.ndindex(nx, ny, nz):
         u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(snapshot[i, j, k, 0], snapshot[i, j, k, 1])
 
-    c = np.zeros(shape=(nx * 3, ny * 3, nz * 3, 3))
-    c[:, :, :, 0] = np.tile(u, (3, 3, 3))
-    c[:, :, :, 1] = np.tile(v, (3, 3, 3))
-    c[:, :, :, 2] = np.tile(w, (3, 3, 3))
+    c = np.zeros(shape=(nx, ny, nz, 4))
+    c[:, :, :, 0] = u
+    c[:, :, :, 1] = v
+    c[:, :, :, 2] = w
+    c[:, :, :, 3] = np.ones(shape=(nx, ny, nz))
     c = np.abs(c)
+
+    c2 = np.zeros(shape=(nx * ny * nz, 4))
+    l = 0
+    for i, j, k in np.ndindex((nx, ny, nz)):
+        c2[l] = c[i, j, k]
+        l += 1
+
+    c3 = np.concatenate((c2, np.repeat(c2, 2, axis=0)), axis=0)
 
     fig = plt.figure()
     ax: Axes3D = fig.gca(projection='3d')
-    ax.quiver(x, y, z, u, v, w, pivot='middle', color=c)
+    ax.quiver(x, y, z, u, v, w, pivot='middle', color=c3)
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
     plt.show()
-
 
 def plot_spin_directions(snapshot):
     """
