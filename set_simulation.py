@@ -8,15 +8,14 @@ Run multiple instance of Heisenberg
 import getopt
 import json
 import os
-import shutil
 import sys
 from multiprocessing.pool import Pool
 
 import numpy as np
 
-from counter import Counter
 from heisenberg_simulation import init_simulation_tilted, init_simulation_aligned, init_simulation_random, \
     run_simulation
+from skdylib.counter import Counter
 
 CONFIG_FILE_NAME = "config.json"
 
@@ -30,7 +29,6 @@ def init_set(setname, J, Hz, T, L, theta_0=None, phi_0=None, tilted=False):
     params_list = []
     L_list = []
     set_directory = SIMULATIONS_DIRECTORY + setname + "/"
-    shutil.rmtree(set_directory, ignore_errors=True)
 
     for i, j, k in np.ndindex((T.shape[0], L.shape[0], Hz.shape[0])):
         simdir_list.append(set_directory + setname + f"_T{int(T[i]*100)/100}_L{L[j]}_H{int(Hz[k]*100)/100}/")

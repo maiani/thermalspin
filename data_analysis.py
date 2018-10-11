@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
-from math_utils import sph2xyz
+from skdylib.spherical_coordinates import sph2xyz
 
 SIMULATIONS_DIRECTORY = "./simulations/"
 
@@ -209,7 +209,7 @@ def plot_spin_directions(snapshot):
 
     fig = plt.figure()
     ax: Axes3D = fig.gca(projection='3d')
-    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=np.abs(points))
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=np.abs(points), s=2)
 
     ax.set_xlim([-1.1, 1.1])
     ax.set_ylim([-1.1, 1.1])

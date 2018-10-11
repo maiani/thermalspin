@@ -18,6 +18,7 @@ def xyz2sph(v):
 
     return np.array([np.arccos(v[2]), np.arctan2(v[1], v[0])])
 
+
 @jit(nopython=True, cache=True)
 def sph2xyz(theta, phi):
     """
@@ -41,7 +42,7 @@ def sph_dot(theta1, theta2, delta_phi):
 
 
 @jit(nopython=True, cache=True)
-def sph_u_rand():
+def sph_urand():
     """
     Generate random unit vector in spherical coordinates
     :return: (theta, phi) the two angles

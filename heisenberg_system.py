@@ -7,7 +7,7 @@ Classical Heisenberg model Monte Carlo simulator
 import numpy as np
 from numba import jit
 
-from math_utils import sph_dot, sph2xyz, sph_u_rand
+from skdylib.spherical_coordinates import sph_dot, sph2xyz, sph_urand
 
 
 class HeisenbergSystem:
@@ -154,7 +154,7 @@ def numba_step(state, nx, ny, nz, J, h, beta, energy, total_magnetization):
     e0 += -h * np.cos(state[i, j, k, 0])
 
     # Generate a new random direction and compute energy due to the spin in the new direction
-    r_theta, r_phi = sph_u_rand()
+    r_theta, r_phi = sph_urand()
 
     e1 = 0
     ii = (i + 1) % nx

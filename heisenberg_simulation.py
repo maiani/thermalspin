@@ -14,7 +14,7 @@ import numpy as np
 
 from heisenberg_system import HeisenbergSystem
 from kent_distribution.kent_distribution import kent2
-from math_utils import sph_u_rand, xyz2sph
+from skdylib.spherical_coordinates import sph_urand, xyz2sph
 
 SNAPSHOTS_ARRAY_DIMENSION = int(5e4)
 
@@ -162,7 +162,7 @@ def init_simulation_random(simdir, nx, ny, nz, params):
 
     state = np.zeros(shape=(nx, ny, nz, 2))
     for i, j, k in np.ndindex(nx, ny, nz):
-        theta_r, phi_r = sph_u_rand()
+        theta_r, phi_r = sph_urand()
         state[i, j, k, 0] = theta_r
         state[i, j, k, 1] = phi_r
 
