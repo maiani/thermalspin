@@ -24,7 +24,7 @@ select a name for the set and a range of temperature and dimensions.
 To initialize the set of system you have to run a command like:
 
 ```lang=bash
-$ python3 set_simulation.py -i sim_816 -L 8,12,16 -t 0.5,3,0.25
+$ python3 set_simulation.py -i sim_816 -L 8,12,16 -T 0.5,3,0.25
 ```
 
 This will create a set named `sim_816` with dimensions 8, 12 and 16 and temperature ranging
