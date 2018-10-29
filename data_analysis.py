@@ -10,20 +10,23 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
+from numba import jit
 
-from skdylib.spherical_coordinates import sph2xyz
+from skdylib.spherical_coordinates import sph2xyz, sph_dot
 
 SIMULATIONS_DIRECTORY = "./simulations/"
 
 
-def load_results(simname):
+# ----------------------------------------- LOADING --------------------------------------------------------------------
+
+def load_results(simulation_name):
     """
     Load the results of a simulation
-    :param simname: name of the simulation
+    :param simulation_name: name of the simulation
     :return: final_state, t, e, m
     """
 
-    simdir = SIMULATIONS_DIRECTORY + f"{simname}/"
+    simdir = SIMULATIONS_DIRECTORY + f"{simulation_name}/"
 
     final_state = np.load(simdir + "state.npy")
     results = np.load(simdir + "results.npy")
@@ -41,18 +44,22 @@ def load_results(simname):
     return final_state, t, J, h, T, e, m
 
 
-def load_snapshots(simname):
-    simdir = SIMULATIONS_DIRECTORY + f"{simname}/"
-    snapshots = np.load(simdir + "snapshots.npy")
+def load_snapshots(simulation_name):
+    """
+    :param simulation_name: The name of the simulation
+    :return: An array of the snapshots
+    """
+    simulation_directory = SIMULATIONS_DIRECTORY + f"{simulation_name}/"
+    snapshots = np.load(simulation_directory + "snapshots.npy")
     return snapshots
 
 
-def load_set_results(setname):
-    filelist = os.listdir(SIMULATIONS_DIRECTORY + setname + "/")
+def load_set_results(set_name):
+    filelist = os.listdir(SIMULATIONS_DIRECTORY + set_name + "/")
     simlist = []
 
     for f in filelist:
-        if f.find(setname) >= 0:
+        if f.find(set_name) >= 0:
             simlist.append(f)
 
     simlist.sort()
@@ -60,7 +67,7 @@ def load_set_results(setname):
 
     for i in range(0, simnumber):
         final_state_loaded, t_loaded, J_loaded, h_loaded, T_loaded, e_loaded, m_loaded = load_results(
-            setname + "/" + simlist[i])
+            set_name + "/" + simlist[i])
 
         if i == 0:
             final_state = []
@@ -148,6 +155,89 @@ def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, fina
 
     return L_new, H_new, t_new, J_new, T_new, e_new, m_new, final_state_new
 
+
+# --------------------------------------------- COMPUTING --------------------------------------------------------------
+
+@jit(nopython=True, cache=True)
+def snapshot_sph2xyz(snapshot_sph):
+    nx, ny, nz, u = snapshot_sph.shape
+    snapshot_xyz = np.zeros(shape=(nx, ny, nz, 3))
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        snapshot_xyz[i, j, k] = sph2xyz(snapshot_sph[i, j, k, 0], snapshot_sph[i, j, k, 1])
+
+    return snapshot_xyz
+
+
+@jit(nopython=True, cache=True)
+def snapshot_dot(snapshot1, snapshot2):
+    nx, ny, nz, u = snapshot1.shape
+    ret = np.zeros(shape=(nx, ny, nz))
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        ret[i, j, k] = sph_dot(snapshot1[i, j, k, 0], snapshot2[i, j, k, 0],
+                               snapshot1[i, j, k, 1] - snapshot2[i, j, k, 1])
+    return ret
+
+
+# @jit(nopython=True, cache=True)
+def time_correlation(snapshot1, snapshot2):
+    """
+    Compute the time correlation between two snapshots (averaging on each site)
+    """
+    s1 = np.mean(snapshot_sph2xyz(snapshot1), axis=(0, 1, 2))
+    s2 = np.mean(snapshot_sph2xyz(snapshot2), axis=(0, 1, 2))
+    s1s2 = s1.dot(s2)
+    return np.mean(snapshot_dot(snapshot1, snapshot2), axis=(0, 1, 2)) - s1s2
+
+
+@jit(nopython=True, cache=True)
+def translate_snapshot(snapshot, x, y, z):
+    nx, ny, nz, u = snapshot.shape
+    ret = np.zeros(shape=snapshot.shape)
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        ret[i, j, k] = snapshot[(i + x) % nx, (j + y) % ny, (k + z) % nz]
+
+    return ret
+
+
+# @jit(nopython=True, cache=True)
+def spatial_correlation_matrix(snapshot):
+    nx, ny, nz, u = snapshot.shape
+    ret = np.zeros(shape=(nx, ny, nz))
+
+    s = np.mean(snapshot_sph2xyz(snapshot), axis=(0, 1, 2))
+    s1s2 = s.dot(s)
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        ret[i, j, k] = np.mean(snapshot_dot(snapshot, translate_snapshot(snapshot, i, j, k)), axis=(0, 1, 2)) - s1s2
+    return ret
+
+
+# @jit(nopython=True, cache=True)
+def radial_distribution(correlation_matrix):
+    nx, ny, nz = correlation_matrix.shape
+    corr = np.zeros(shape=(nx * ny * nz, 2)) * np.NaN
+
+    l = 0
+    for i, j, k in np.ndindex(nx, ny, nz):
+        corr[l, 0] = np.sqrt(i ** 2 + j ** 2 + k ** 2)
+        corr[l, 1] = correlation_matrix[i, j, k]
+        l += 1
+
+    r = np.unique(corr[:, 0])
+    c = np.zeros(shape=r.shape)
+
+    for i in range(r.shape[0]):
+        c[i] = np.mean(corr[(corr[:] == r[i])[:, 0], 1])
+
+    return r, c
+
+
+# ---------------------------------------------- PLOTTING --------------------------------------------------------------
+
+
 def plot_state(snapshot):
     """
     Plot system state
@@ -191,6 +281,7 @@ def plot_state(snapshot):
     ax.set_zlabel('z')
 
     plt.show()
+
 
 def plot_spin_directions(snapshot):
     """

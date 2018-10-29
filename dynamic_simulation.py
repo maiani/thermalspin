@@ -6,42 +6,11 @@ User interface for initializing and run simulations
 """
 
 import getopt
-import json
-import os
 import sys
 
 from heisenberg_simulation import init_simulation_tilted, init_simulation_random, init_simulation_aligned, \
     run_simulation
-
-CONFIG_FILE_NAME = "config.json"
-
-PROCESSES_NUMBER = None
-SIMULATIONS_DIRECTORY = None
-DEFAULT_PARAMS = None
-
-
-def read_config_file():
-    global PROCESSES_NUMBER
-    global SIMULATIONS_DIRECTORY
-    global DEFAULT_PARAMS
-
-    if os.path.isfile(CONFIG_FILE_NAME):
-        config_file = open(CONFIG_FILE_NAME, "r")
-        config = json.load(config_file)
-    else:
-        raise Exception("Missing config.json file")
-
-    PROCESSES_NUMBER = int(config["process_number"])
-    SIMULATIONS_DIRECTORY = config["simulations_directory"]
-    default_param_J = config["default_param_J"]
-    default_param_Hz = config["default_param_Hz"]
-    default_param_T = config["default_param_T"]
-    default_steps_number = int(config["default_steps_number"])
-    default_delta_snapshots = int(config["default_delta_snapshots"])
-
-    DEFAULT_PARAMS = dict(param_J=default_param_J, param_Hz=default_param_Hz,
-                          param_T=default_param_T, steps_number=default_steps_number,
-                          delta_snapshots=default_delta_snapshots)
+from read_config import read_config_file
 
 
 def usage():
@@ -58,7 +27,8 @@ def usage():
 
 
 if __name__ == "__main__":
-    read_config_file()
+
+    DEFAULT_PARAMS, SIMULATIONS_DIRECTORY, PROCESSES_NUMBER = read_config_file()
 
     mode = None
     simname = None

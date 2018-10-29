@@ -6,7 +6,6 @@ Run multiple instance of Heisenberg
 """
 
 import getopt
-import json
 import os
 import sys
 from multiprocessing.pool import Pool
@@ -15,13 +14,8 @@ import numpy as np
 
 from heisenberg_simulation import init_simulation_tilted, init_simulation_aligned, init_simulation_random, \
     run_simulation
+from read_config import read_config_file
 from skdylib.counter import Counter
-
-CONFIG_FILE_NAME = "config.json"
-
-PROCESSES_NUMBER = None
-SIMULATIONS_DIRECTORY = None
-DEFAULT_PARAMS = None
 
 
 def init_set(setname, J, Hz, T, L, theta_0=None, phi_0=None, tilted=False):
@@ -81,30 +75,6 @@ def run_set(setname):
     pool.map(run_simulation_wrapper, simdir_list)
 
 
-def read_config_file():
-    global PROCESSES_NUMBER
-    global SIMULATIONS_DIRECTORY
-    global DEFAULT_PARAMS
-
-    if os.path.isfile(CONFIG_FILE_NAME):
-        config_file = open(CONFIG_FILE_NAME, "r")
-        config = json.load(config_file)
-    else:
-        raise Exception("Missing config.json file")
-
-    PROCESSES_NUMBER = int(config["process_number"])
-    SIMULATIONS_DIRECTORY = config["simulations_directory"]
-    default_param_J = config["default_param_J"]
-    default_param_Hz = config["default_param_Hz"]
-    default_param_T = config["default_param_T"]
-    default_steps_number = int(config["default_steps_number"])
-    default_delta_snapshots = int(config["default_delta_snapshots"])
-
-    DEFAULT_PARAMS = dict(param_J=default_param_J, param_Hz=default_param_Hz,
-                          param_T=default_param_T, steps_number=default_steps_number,
-                          delta_snapshots=default_delta_snapshots)
-
-
 def usage():
     print("""
     Usage: set_simulation.py [OPTIONS] [PARAMETERS]\n
@@ -120,7 +90,7 @@ def usage():
 
 
 if __name__ == "__main__":
-    read_config_file()
+    DEFAULT_PARAMS, SIMULATIONS_DIRECTORY, PROCESSES_NUMBER = read_config_file()
 
     mode = None
     setname = None

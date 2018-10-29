@@ -172,21 +172,21 @@ def init_simulation_random(simdir, nx, ny, nz, params):
     np.save(simdir + "state.npy", state)
 
 
-def run_simulation(simdir, save_snapshots=False, verbose=True):
+def run_simulation(simulation_directory, verbose=True):
     """
     Run a simulation and save to disk the results
-    :param simdir: the directory of the simulation
-    :param save_snapshots: boolean for saving also the snapshots' states
+    :param simulation_directory: the directory of the simulation
+    :param verbose: print step numbers in real time
     """
 
-    if os.path.isfile(simdir + "params.json"):
-        params_file = open(simdir + "params.json", "r")
+    if os.path.isfile(simulation_directory + "params.json"):
+        params_file = open(simulation_directory + "params.json", "r")
         params = json.load(params_file)
     else:
         raise Exception("Missing params.json file")
 
-    if os.path.isfile(simdir + "state.npy"):
-        state = np.load(simdir + "state.npy")
+    if os.path.isfile(simulation_directory + "state.npy"):
+        state = np.load(simulation_directory + "state.npy")
     else:
         raise Exception("Missing state.npy file")
 
@@ -195,6 +195,7 @@ def run_simulation(simdir, save_snapshots=False, verbose=True):
     param_T = np.array(params["param_T"])
     steps_number = params["steps_number"]
     delta_snapshots = params["delta_snapshots"]
+    save_snapshots = params["save_snapshots"]
 
     sys = HeisenbergSystem(state, param_J[0], param_Hz[0], param_T[0])
     hsim = HeisenbergSimulation(sys, take_states_snapshots=save_snapshots)
@@ -220,7 +221,7 @@ def run_simulation(simdir, save_snapshots=False, verbose=True):
     start = time.time()
 
     # Save the last state
-    np.save(simdir + "state.npy", hsim.system.state)
+    np.save(simulation_directory + "state.npy", hsim.system.state)
 
     # Collect the results of the simulation
     new_results = np.zeros(shape=(hsim.snapshots_counter, 4))
@@ -235,12 +236,13 @@ def run_simulation(simdir, save_snapshots=False, verbose=True):
     new_snapshots_params[:, 3] = hsim.snapshots_T[:hsim.snapshots_counter]
 
     # If old data is found, append the new one
-    if os.path.isfile(simdir + "snapshots_params.npy") and os.path.isfile(simdir + "results.npy"):
+    if os.path.isfile(simulation_directory + "snapshots_params.npy") and os.path.isfile(
+            simulation_directory + "results.npy"):
 
-        old_results = np.load(simdir + "results.npy")
+        old_results = np.load(simulation_directory + "results.npy")
         results = np.concatenate((old_results, new_results[1:]))
 
-        old_snapshots_params = np.load(simdir + "snapshots_params.npy")
+        old_snapshots_params = np.load(simulation_directory + "snapshots_params.npy")
         last_t = old_snapshots_params[-1, 0]
         new_snapshots_params[:, 0] += last_t
         snapshots_params = np.concatenate((old_snapshots_params, new_snapshots_params[1:]))
@@ -250,18 +252,18 @@ def run_simulation(simdir, save_snapshots=False, verbose=True):
         results = new_results
 
     # Save all
-    np.save(simdir + "snapshots_params.npy", snapshots_params)
-    np.save(simdir + "results.npy", results)
+    np.save(simulation_directory + "snapshots_params.npy", snapshots_params)
+    np.save(simulation_directory + "results.npy", results)
 
     if save_snapshots:
         new_snapshots = hsim.snapshots[:hsim.snapshots_counter]
-        if os.path.isfile(simdir + "snapshots.npy"):
-            old_snapshots = np.load(simdir + "snapshots.npy")
+        if os.path.isfile(simulation_directory + "snapshots.npy"):
+            old_snapshots = np.load(simulation_directory + "snapshots.npy")
             snapshots = np.concatenate((old_snapshots, new_snapshots[1:]))
 
         else:
             snapshots = new_snapshots
-        np.save(simdir + "snapshots.npy", snapshots)
+        np.save(simulation_directory + "snapshots.npy", snapshots)
 
     end = time.time()
     saving_time = end - start
