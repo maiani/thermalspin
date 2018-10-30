@@ -59,13 +59,12 @@ def load_set_results(set_name):
     simlist = []
 
     for f in filelist:
-        if f.find(set_name) >= 0:
-            simlist.append(f)
+        simlist.append(f)
 
     simlist.sort()
     simnumber = len(simlist)
 
-    for i in range(0, simnumber):
+    for i in range(simnumber):
         final_state_loaded, t_loaded, J_loaded, h_loaded, T_loaded, e_loaded, m_loaded = load_results(
             set_name + "/" + simlist[i])
 
@@ -157,6 +156,18 @@ def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, fina
 
 
 # --------------------------------------------- COMPUTING --------------------------------------------------------------
+
+def bootstrap(initial_samples, n, new_samples_number):
+    old_samples_number = initial_samples.shape[0]
+    new_shape = (new_samples_number, n)
+    new_samples = np.zeros(shape=new_shape)
+
+    for i in range(new_samples_number):
+        indices = np.random.choice(old_samples_number, n)
+        new_samples[i] = initial_samples.take(indices)
+
+    return new_samples
+
 
 @jit(nopython=True, cache=True)
 def snapshot_sph2xyz(snapshot_sph):

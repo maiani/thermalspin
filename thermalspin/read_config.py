@@ -34,5 +34,4 @@ def read_config_file():
     default_params = dict(param_J=default_param_J, param_Hz=default_param_Hz,
                           param_T=default_param_T, steps_number=default_steps_number,
                           delta_snapshots=default_delta_snapshots, save_snapshots=default_save_snapshots)
-
     return default_params, simulations_directory, processes_number

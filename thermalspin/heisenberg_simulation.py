@@ -12,11 +12,11 @@ import time
 
 import numpy as np
 
-from heisenberg_system import HeisenbergSystem
 from kent_distribution.kent_distribution import kent2
 from skdylib.spherical_coordinates import sph_urand, xyz2sph
+from thermalspin.heisenberg_system import HeisenbergSystem
 
-SNAPSHOTS_ARRAY_DIMENSION = int(5e4)
+SNAPSHOTS_ARRAY_INITIAL_DIMENSION = int(3e4)
 
 
 class HeisenbergSimulation:
@@ -33,20 +33,21 @@ class HeisenbergSimulation:
         self.system = hsys
         self.steps_counter = 0
         self.snapshots_counter = 0
+        self.snapshots_array_dimension = SNAPSHOTS_ARRAY_INITIAL_DIMENSION
 
         if take_states_snapshots:
             self.snapshots = np.zeros(
-                shape=(SNAPSHOTS_ARRAY_DIMENSION, self.system.nx, self.system.ny, self.system.nz, 2))
+                shape=(SNAPSHOTS_ARRAY_INITIAL_DIMENSION, self.system.nx, self.system.ny, self.system.nz, 2))
         else:
             self.snapshots = None
 
-        self.snapshots_t = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_e = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_m = np.zeros(shape=(SNAPSHOTS_ARRAY_DIMENSION, 3))
+        self.snapshots_t = np.zeros(shape=SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+        self.snapshots_e = np.zeros(shape=SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+        self.snapshots_m = np.zeros(shape=(SNAPSHOTS_ARRAY_INITIAL_DIMENSION, 3))
 
-        self.snapshots_J = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_T = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
-        self.snapshots_Hz = np.zeros(shape=SNAPSHOTS_ARRAY_DIMENSION)
+        self.snapshots_J = np.zeros(shape=SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+        self.snapshots_T = np.zeros(shape=SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+        self.snapshots_Hz = np.zeros(shape=SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
 
         self.take_snapshot()
 
@@ -63,8 +64,24 @@ class HeisenbergSimulation:
         """"
         Take a snapshot of the system, parameters and results
         """
-        # TODO: Fix for snapshots exceeding the array dimension
 
+        # First check if the snapshots array needs reshape
+        if self.snapshots_counter == self.snapshots_array_dimension:
+            if self.snapshots is not None:
+                self.snapshots.resize((self.snapshots_counter + SNAPSHOTS_ARRAY_INITIAL_DIMENSION, self.system.nx,
+                                       self.system.ny, self.system.nz, 2))
+            else:
+                self.snapshots = None
+
+            self.snapshots_t.resize(self.snapshots_counter + SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+            self.snapshots_e.resize(self.snapshots_counter + SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+            self.snapshots_m.resize((self.snapshots_counter + SNAPSHOTS_ARRAY_INITIAL_DIMENSION, 3))
+
+            self.snapshots_J.resize(self.snapshots_counter + SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+            self.snapshots_T.resize(self.snapshots_counter + SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+            self.snapshots_Hz.resize(self.snapshots_counter + SNAPSHOTS_ARRAY_INITIAL_DIMENSION)
+
+        # Then takes a snapshot
         if self.snapshots is not None:
             self.snapshots[self.snapshots_counter, :, :, :, :] = self.system.state.copy()
 

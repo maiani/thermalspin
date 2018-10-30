@@ -1,0 +1,14 @@
+{
+  "param_J": [
+    1
+  ],
+  "param_Hz": [
+    0
+  ],
+  "param_T": [
+    2
+  ],
+  "steps_number": 600000,
+  "delta_snapshots": 500,
+  "save_snapshots": true
+}
