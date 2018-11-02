@@ -218,9 +218,11 @@ def run_simulation(simulation_directory, verbose=True):
     hsim = HeisenbergSimulation(sys, take_states_snapshots=save_snapshots)
 
     for i in range(param_T.shape[0]):
+        T_str = "{0:.3f}".format(param_T[i])
+        Hz_str = "{0:.3f}".format(param_Hz[i])
         print(f"Simulation stage:   {i}\n"
-              f"Temperature:        {param_T[i]}\n"
-              f"Hz:                 {param_Hz[i]}\n"
+              f"Temperature:        {T_str}\n"
+              f"Hz:                 {Hz_str}\n"
               f"Steps number:       {steps_number}\n"
               f"Delta snapshots:    {delta_snapshots}\n")
 
@@ -232,7 +234,8 @@ def run_simulation(simulation_directory, verbose=True):
         end_time = time.time()
         run_time = end_time - start_time
 
-        print(f"Stage completed in {run_time} seconds\n")
+        run_time_str = "{0:.2f}".format(run_time)
+        print(f"Stage completed in {run_time_str} seconds\n")
 
     print("Saving results ...", end="")
     start = time.time()
@@ -284,4 +287,6 @@ def run_simulation(simulation_directory, verbose=True):
 
     end = time.time()
     saving_time = end - start
-    print("done in {0} seconds.".format(saving_time))
+    saving_time_str = "{0:.6f}".format(saving_time)
+
+    print(f"done in {saving_time_str} seconds.")

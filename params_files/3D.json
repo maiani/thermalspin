@@ -11,6 +11,6 @@
     1
   ],
   "default_delta_snapshots": 150e3,
-  "default_steps_number": 15e7,
+  "default_steps_number": 6e8,
   "default_save_snapshots": false
 }

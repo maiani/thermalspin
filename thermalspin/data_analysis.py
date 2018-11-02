@@ -4,7 +4,6 @@
 """
 Show simple data of the simulation
 """
-
 import os
 
 import matplotlib.pyplot as plt
@@ -13,6 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from numba import jit
 
 from skdylib.spherical_coordinates import sph2xyz, sph_dot
+from thermalspin.heisenberg_system import site_energy
 
 SIMULATIONS_DIRECTORY = "./simulations/"
 
@@ -54,7 +54,7 @@ def load_snapshots(simulation_name):
     return snapshots
 
 
-def load_set_results(set_name):
+def load_set_results(set_name, load_set_snapshots=False):
     filelist = os.listdir(SIMULATIONS_DIRECTORY + set_name + "/")
     simlist = []
 
@@ -63,34 +63,42 @@ def load_set_results(set_name):
 
     simlist.sort()
     simnumber = len(simlist)
+    snapshots = []
 
     for i in range(simnumber):
-        final_state_loaded, t_loaded, J_loaded, h_loaded, T_loaded, e_loaded, m_loaded = load_results(
-            set_name + "/" + simlist[i])
+        try:
+            final_state_loaded, t_loaded, J_loaded, h_loaded, T_loaded, e_loaded, m_loaded = load_results(
+                set_name + "/" + simlist[i])
 
-        if i == 0:
-            final_state = []
-            L = np.zeros(shape=(simnumber, 3))
-            t = np.zeros(shape=((simnumber,) + t_loaded.shape))
-            J = np.zeros(shape=((simnumber,) + J_loaded.shape))
-            h = np.zeros(shape=((simnumber,) + h_loaded.shape))
-            T = np.zeros(shape=((simnumber,) + T_loaded.shape))
-            e = np.zeros(shape=((simnumber,) + e_loaded.shape))
-            m = np.zeros(shape=((simnumber,) + m_loaded.shape))
+            if i == 0:
+                final_state = []
+                L = np.zeros(shape=(simnumber, 3))
+                t = np.zeros(shape=((simnumber,) + t_loaded.shape))
+                J = np.zeros(shape=((simnumber,) + J_loaded.shape))
+                h = np.zeros(shape=((simnumber,) + h_loaded.shape))
+                T = np.zeros(shape=((simnumber,) + T_loaded.shape))
+                e = np.zeros(shape=((simnumber,) + e_loaded.shape))
+                m = np.zeros(shape=((simnumber,) + m_loaded.shape))
 
-        final_state.append(final_state_loaded)
-        L[i] = np.array(final_state_loaded[:, :, :, 0].shape)
-        t[i] = t_loaded
-        J[i] = J_loaded
-        h[i] = h_loaded
-        T[i] = T_loaded
-        e[i] = e_loaded
-        m[i] = m_loaded
+            final_state.append(final_state_loaded)
+            L[i] = np.array(final_state_loaded.shape[0])
+            t[i] = t_loaded
+            J[i] = J_loaded
+            h[i] = h_loaded
+            T[i] = T_loaded
+            e[i] = e_loaded
+            m[i] = m_loaded
 
-    return final_state, L, t, J, h, T, e, m
+        except(Exception):
+            print(f"Error in {simlist[i]}")
+
+        if load_set_snapshots:
+            snapshots.append(load_snapshots(set_name + "/" + simlist[i]))
+
+    return final_state, L, t, J, h, T, e, m, snapshots
 
 
-def arrange_set_results_LT(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, final_state_lst):
+def arrange_set_results_LT(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, final_state_lst, snapshots_lst=None):
     L_new = np.unique(L_lst)
     T_new = np.unique(T_lst)
     L_num = L_new.shape[0]
@@ -98,8 +106,8 @@ def arrange_set_results_LT(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, fina
     t_num = t_lst.shape[1]
     sim_num = t_lst.shape[0]
 
-    tmp_array = [None] * T_num
-    final_state_new = [tmp_array] * L_num
+    final_state_new = [[None] * T_num for _ in range(L_num)]
+    snapshots_new = [[None] * T_num for _ in range(L_num)]
 
     e_new = np.zeros(shape=(L_num, T_num, t_num))
     t_new = np.zeros(shape=(L_num, T_num, t_num))
@@ -112,6 +120,8 @@ def arrange_set_results_LT(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, fina
         L_idx = int(np.argmax(np.equal(L_new, L_lst[i, 0])))
 
         final_state_new[L_idx][T_idx] = final_state_lst[i]
+        if snapshots_lst is not None:
+            snapshots_new[L_idx][T_idx] = snapshots_lst[i]
 
         e_new[L_idx, T_idx] = e_lst[i]
         t_new[L_idx, T_idx] = t_lst[i]
@@ -119,10 +129,10 @@ def arrange_set_results_LT(L_lst, t_lst, J_lst, h_lst, T_lst, e_lst, m_lst, fina
         h_new[L_idx, T_idx] = h_lst[i]
         m_new[L_idx, T_idx] = m_lst[i]
 
-    return L_new, T_new, t_new, J_new, h_new, e_new, m_new, final_state_new
+    return L_new, T_new, t_new, J_new, h_new, e_new, m_new, final_state_new, snapshots_new
 
 
-def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, final_state_lst):
+def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, final_state_lst, snapshots=None):
     L_new = np.unique(L_lst)
     H_new = np.unique(H_lst)
 
@@ -131,8 +141,8 @@ def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, fina
     t_num = t_lst.shape[1]
     sim_num = t_lst.shape[0]
 
-    tmp_array = [None] * H_num
-    final_state_new = [tmp_array] * L_num
+    final_state_new = [[None] * H_num for _ in range(L_num)]
+    snapshots_new = [[None] * H_num for _ in range(L_num)]
 
     e_new = np.zeros(shape=(L_num, H_num, t_num))
     t_new = np.zeros(shape=(L_num, H_num, t_num))
@@ -145,6 +155,8 @@ def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, fina
         L_idx = int(np.argmax(np.equal(L_new, L_lst[i, 0])))
 
         final_state_new[L_idx][Hz_idx] = final_state_lst[i]
+        if snapshots is not None:
+            snapshots_new[L_idx][Hz_idx] = snapshots[i]
 
         e_new[L_idx, Hz_idx] = e_lst[i]
         t_new[L_idx, Hz_idx] = t_lst[i]
@@ -152,10 +164,23 @@ def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, fina
         T_new[L_idx, Hz_idx] = T_lst[i]
         m_new[L_idx, Hz_idx] = m_lst[i]
 
-    return L_new, H_new, t_new, J_new, T_new, e_new, m_new, final_state_new
+    return L_new, H_new, t_new, J_new, T_new, e_new, m_new, final_state_new, snapshots_new
 
 
 # --------------------------------------------- COMPUTING --------------------------------------------------------------
+
+@jit(nopython=True, cache=True)
+def compute_site_energy(J, Hz, snapshots):
+    t, nx, ny, nz, _ = snapshots.shape
+
+    energy_per_site = np.zeros(shape=(t, nx, ny, nz))
+
+    for n, i, j, k in np.ndindex(t, nx, ny, nz):
+        energy_per_site[n, i, j, k] = site_energy(i, j, k, snapshots[n], J[n], Hz[n])
+
+    return energy_per_site
+
+
 
 def bootstrap(initial_samples, n, new_samples_number):
     old_samples_number = initial_samples.shape[0]
@@ -290,6 +315,53 @@ def plot_state(snapshot):
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
+
+    plt.show()
+
+
+def plot_state_2D(snapshot):
+    """
+    Plot system state
+    """
+    nx = snapshot.shape[0]
+    ny = snapshot.shape[1]
+    nz = snapshot.shape[2]
+
+    x, y, z = np.meshgrid(np.arange(0, nx),
+                          np.arange(0, ny),
+                          np.arange(0, nz))
+
+    u = np.zeros(shape=(nx, ny, nz))
+    v = np.zeros(shape=(nx, ny, nz))
+    w = np.zeros(shape=(nx, ny, nz))
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        u[i, j, k], v[i, j, k], w[i, j, k] = sph2xyz(snapshot[i, j, k, 0], snapshot[i, j, k, 1])
+
+    c = np.zeros(shape=(nx, ny, nz, 4))
+    c[:, :, :, 0] = u
+    c[:, :, :, 1] = v
+    c[:, :, :, 2] = w
+    c[:, :, :, 3] = np.ones(shape=(nx, ny, nz))
+    c = np.abs(c)
+
+    c2 = np.zeros(shape=(nx * ny * nz, 4))
+    l = 0
+    for i, j, k in np.ndindex((nx, ny, nz)):
+        c2[l] = c[i, j, k]
+        l += 1
+
+    c3 = np.concatenate((c2, np.repeat(c2, 2, axis=0)), axis=0)
+
+    fig = plt.figure()
+    ax: Axes3D = fig.gca(projection='3d')
+    ax.quiver(x, y, z, u, v, w, pivot='middle', color=c3)
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
+    ax.set_zlim([-1.1, 1.1])
 
     plt.show()
 

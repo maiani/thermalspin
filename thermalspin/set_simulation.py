@@ -25,7 +25,9 @@ def init_set(setname, J, Hz, T, L, theta_0=None, phi_0=None, tilted=False):
     set_directory = SIMULATIONS_DIRECTORY + setname + "/"
 
     for i, j, k in np.ndindex((T.shape[0], L.shape[0], Hz.shape[0])):
-        simdir_list.append(set_directory + setname + f"_T{int(T[i]*100)/100}_L{L[j]}_H{int(Hz[k]*100)/100}/")
+        T_str = "{0:.3f}".format(T[i])
+        Hz_str = "{0:.3f}".format(Hz[k])
+        simdir_list.append(set_directory + setname + f"_T{T_str}_L{L[j]}_H{Hz_str}/")
         params = DEFAULT_PARAMS
         params["param_T"] = [float(T[i])]
         params["param_Hz"] = [float(Hz[k])]
@@ -46,6 +48,35 @@ def init_set(setname, J, Hz, T, L, theta_0=None, phi_0=None, tilted=False):
             init_simulation_aligned(simdir_list[i], nx=L_list[i], ny=L_list[i], nz=L_list[i], params=params_list[i],
                                     theta_0=theta_0, phi_0=phi_0)
 
+
+def init_2D_set(setname, J, Hz, T, L, theta_0=None, phi_0=None):
+    simdir_list = []
+    params_list = []
+    L_list = []
+    set_directory = SIMULATIONS_DIRECTORY + setname + "/"
+
+    for i, j, k in np.ndindex((T.shape[0], L.shape[0], Hz.shape[0])):
+        T_str = "{0:.3f}".format(T[i])
+        Hz_str = "{0:.3f}".format(Hz[k])
+        simdir_list.append(set_directory + setname + f"_T{T_str}_L{L[j]}_H{Hz_str}/")
+        params = DEFAULT_PARAMS
+        params["param_T"] = [float(T[i])]
+        params["param_Hz"] = [float(Hz[k])]
+        params["param_J"] = J
+        params_list.append(params.copy())
+        L_list.append(L[j].copy())
+
+    if theta_0 is None:
+        for i in range(len(simdir_list)):
+            init_simulation_random(simdir_list[i], nx=L_list[i], ny=L_list[i], nz=1, params=params_list[i])
+
+    else:
+        for i in range(len(simdir_list)):
+            init_simulation_aligned(simdir_list[i], nx=L_list[i], ny=L_list[i], nz=1, params=params_list[i],
+                                    theta_0=theta_0, phi_0=phi_0)
+
+
+# Run
 
 simulations_number = 0
 completed_simulations_counter = Counter()
@@ -98,13 +129,14 @@ def set_simulation():
     J = DEFAULT_PARAMS["param_J"]
     T = np.array(DEFAULT_PARAMS["param_T"])
     Hz = np.array(DEFAULT_PARAMS["param_Hz"])
+    sim_2D = False
     theta_0, phi_0 = (None, None)
     Ti, Tf, dt = (None, None, None)
     tilted = False
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hr:i:L:m:T:J:H:",
-                                   ["help", "initialize=", "run=", "dimensions=", "temperatures=", 'tilted'])
+                                   ["help", "initialize=", "run=", "2D", "temperatures=", 'tilted'])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -151,6 +183,9 @@ def set_simulation():
         elif opt in "-J":
             J = float(arg)
 
+        elif opt in "--2D":
+            sim_2D = True
+
         elif opt in "--tilted":
             tilted = True
 
@@ -159,7 +194,9 @@ def set_simulation():
         run_set(setname)
 
     elif mode == "init":
-        if theta_0 is None:
+        if sim_2D:
+            init_2D_set(setname, J, Hz, T, L)
+        elif theta_0 is None:
             init_set(setname, J, Hz, T, L, tilted=tilted)
         else:
             init_set(setname, J, Hz, T, L, theta_0, phi_0, tilted=tilted)
