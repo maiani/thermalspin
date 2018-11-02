@@ -6,7 +6,7 @@ Run multiple instance of Heisenberg
 import getopt
 import os
 import sys
-from multiprocessing.pool import Pool
+from multiprocessing import pool, cpu_count
 
 import numpy as np
 
@@ -101,8 +101,13 @@ def run_set(setname):
     global simulations_number
     simulations_number = len(simdir_list)
 
-    pool = Pool(processes=PROCESSES_NUMBER)
-    pool.map(run_simulation_wrapper, simdir_list)
+    if PROCESSES_NUMBER <= 0:
+        processes_number = cpu_count() - PROCESSES_NUMBER
+    else:
+        processes_number = PROCESSES_NUMBER
+
+    processes_pool = pool.Pool(processes=processes_number)
+    processes_pool.map(run_simulation_wrapper, simdir_list)
 
 
 def usage():

@@ -316,7 +316,7 @@ def plot_state(snapshot):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
-    plt.show()
+    return fig
 
 
 def plot_state_2D(snapshot):
@@ -363,7 +363,7 @@ def plot_state_2D(snapshot):
 
     ax.set_zlim([-1.1, 1.1])
 
-    plt.show()
+    return fig
 
 
 def plot_spin_directions(snapshot):
@@ -393,4 +393,4 @@ def plot_spin_directions(snapshot):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
-    plt.show()
+    return fig
