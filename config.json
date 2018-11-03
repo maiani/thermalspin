@@ -1,6 +1,6 @@
 {
   "simulations_directory": "./simulations/",
-  "process_number": -1,
+  "process_number": 0,
   "default_param_J": [
     1
   ],
@@ -11,6 +11,6 @@
     1
   ],
   "default_delta_snapshots": 100e3,
-  "default_steps_number": 1e7,
+  "default_steps_number": 1e8,
   "default_save_snapshots": false
 }

@@ -8,7 +8,7 @@
   "param_T": [
     2
   ],
-  "steps_number": 600000,
-  "delta_snapshots": 500,
+  "steps_number": 400000,
+  "delta_snapshots": 200,
   "save_snapshots": true
 }

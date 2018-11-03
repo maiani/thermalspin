@@ -31,7 +31,7 @@ def init_set(setname, J, Hz, T, L, theta_0=None, phi_0=None, tilted=False):
         params = DEFAULT_PARAMS
         params["param_T"] = [float(T[i])]
         params["param_Hz"] = [float(Hz[k])]
-        params["param_J"] = J
+        params["param_J"] = [float(J[0])]
         params_list.append(params.copy())
         L_list.append(L[j].copy())
 
@@ -62,7 +62,7 @@ def init_2D_set(setname, J, Hz, T, L, theta_0=None, phi_0=None):
         params = DEFAULT_PARAMS
         params["param_T"] = [float(T[i])]
         params["param_Hz"] = [float(Hz[k])]
-        params["param_J"] = J
+        params["param_J"] = [float(J[0])]
         params_list.append(params.copy())
         L_list.append(L[j].copy())
 
@@ -102,7 +102,7 @@ def run_set(setname):
     simulations_number = len(simdir_list)
 
     if PROCESSES_NUMBER <= 0:
-        processes_number = cpu_count() - PROCESSES_NUMBER
+        processes_number = cpu_count() + PROCESSES_NUMBER
     else:
         processes_number = PROCESSES_NUMBER
 
@@ -186,7 +186,7 @@ def set_simulation():
                 Hz = np.array([float(arg)])
 
         elif opt in "-J":
-            J = float(arg)
+            J = np.array([float(arg)])
 
         elif opt in "--2D":
             sim_2D = True
