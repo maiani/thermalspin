@@ -11,8 +11,6 @@ but also as a test. It performs some higher level tests but it also
 generates example plots if called directly from the shell.
 """
 
-import warnings
-
 from numpy import *
 from scipy.linalg import eig
 from scipy.optimize import fmin_bfgs

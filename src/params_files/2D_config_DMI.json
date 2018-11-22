@@ -5,15 +5,15 @@
     1
   ],
   "default_param_D": [
-    0
+    1
   ],
   "default_param_Hz": [
-    0
+    0.5
   ],
   "default_param_T": [
     1
   ],
-  "default_delta_snapshots": 100e3,
-  "default_steps_number": 2e8,
+  "default_delta_snapshots": 5e3,
+  "default_steps_number": 1e7,
   "default_save_snapshots": false
 }

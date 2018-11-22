@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
-
+#
 ### Initialize the ferromagnetic LT set
 #cp -f ./params_files/3D_config.json ./config.json
 #./set_simulation.py -i ferro_set -L 10,12,14,16,18,20 -T 0.5,2.6,0.1 --tilted
 #./set_simulation.py -i ferro_set -L 10,12,14,16,18,20 -T 1.4,1.5,0.005 --tilted
-
-## Initialize the ferromagnetic critical set
-cp -f ./params_files/3D_config.json ./config.json
-./set_simulation.py -i ferro_critic_set -L 10,12,14,16 -T 1.4,1.5,0.005 --tilted
 
 ### Initialize the ferromagnetic critical LH set
 # cp ./params_files/3D_config.json ./config.json
@@ -24,3 +20,11 @@ cp -f ./params_files/3D_config.json ./config.json
 ###  Heisenberg 2D
 #cp -f ./params_files/2D_config.json ./config.json
 #./set_simulation.py -i heisenberg_2D --2D -L 16,20,24,28,32 -T 0.25,2,0.05 --tilted
+
+## Skyrmion
+#cp -f ./params_files/2D_config_DMI.json ./config.json
+#./set_simulation.py -i heisenberg_DMI_2D --2D -L 24,32,48,64 -T 0.2,3,0.1 --tilted
+
+cp -f ./params_files/2D_config_DMI_H.json ./config.json
+./set_simulation.py -i heisenberg_DMI_2D_H --2D -L 64 -T 0.2,3,0.1 --tilted
+

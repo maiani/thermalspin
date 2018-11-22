@@ -4,6 +4,7 @@
 """
 Show simple data of the simulation
 """
+import colorsys
 import os
 
 import matplotlib.pyplot as plt
@@ -11,6 +12,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from numba import jit
 
+from skdylib.spherical_coordinates import xyz2sph
 
 SIMULATIONS_DIRECTORY = "./simulations/"
 
@@ -86,10 +88,10 @@ def load_set_results(set_name, load_set_snapshots=False):
             T[i] = T_loaded
             E[i] = E_loaded
             m[i] = m_loaded
-
-        except(Exception):
+            print(simulations_list[i])
+        except Exception as e:
             print(f"Error in {simulations_list[i]}")
-
+            print(e)
         if load_set_snapshots:
             snapshots.append(load_snapshots(set_name + "/" + simulations_list[i]))
 
@@ -207,16 +209,27 @@ def translate_snapshot(snapshot, x, y, z):
     return ret
 
 
-# @jit(nopython=True, cache=True)
+@jit(nopython=True, cache=True)
+def product_over_last_axis(a, b):
+    nx, ny, nz, u = a.shape
+    ret = np.zeros(shape=(nx, ny, nz))
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        ret[i, j, k] = np.dot(a[i, j, k], b[i, j, k])
+
+    return ret
+
+
 def spatial_correlation_matrix(snapshot):
     nx, ny, nz, u = snapshot.shape
     ret = np.zeros(shape=(nx, ny, nz))
 
-    s = np.mean(snapshot_sph2xyz(snapshot), axis=(0, 1, 2))
+    s = np.mean(snapshot, axis=(0, 1, 2))
     s1s2 = s.dot(s)
 
     for i, j, k in np.ndindex(nx, ny, nz):
-        ret[i, j, k] = np.mean(snapshot_dot(snapshot, translate_snapshot(snapshot, i, j, k)), axis=(0, 1, 2)) - s1s2
+        ts = translate_snapshot(snapshot, i, j, k)
+        ret[i, j, k] = np.mean(product_over_last_axis(snapshot, ts), axis=(0, 1, 2)) - s1s2
     return ret
 
 
@@ -288,7 +301,7 @@ def plot_state(snapshot):
     return fig
 
 
-def plot_state_2D(snapshot):
+def plot_state_2D(snapshot, hsl=False):
     """
     Plot system state
     """
@@ -304,13 +317,28 @@ def plot_state_2D(snapshot):
     v = np.zeros(shape=(nx, ny, nz))
     w = np.zeros(shape=(nx, ny, nz))
 
+    h = np.zeros(shape=(nx, ny, nz))
+    l = np.zeros(shape=(nx, ny, nz))
+
     for i, j, k in np.ndindex(nx, ny, nz):
         u[i, j, k], v[i, j, k], w[i, j, k] = snapshot[i, j, k, 0], snapshot[i, j, k, 1], snapshot[i,j,k,2]
+        theta, phi = xyz2sph(snapshot[i, j, k])
+        h[i, j, k] = phi / 2 / np.pi
+        l[i, j, k] = theta / np.pi
+
 
     c = np.zeros(shape=(nx, ny, nz, 4))
-    c[:, :, :, 0] = u
-    c[:, :, :, 1] = v
-    c[:, :, :, 2] = w
+    if not hsl:
+        c[:, :, :, 0] = u
+        c[:, :, :, 1] = v
+        c[:, :, :, 2] = w
+    else:
+        for i, j, k in np.ndindex(nx, ny, nz):
+            col = colorsys.hls_to_rgb(h[i, j, k], l[i, j, k], 1)
+            c[i, j, k, 0] = col[0]
+            c[i, j, k, 1] = col[1]
+            c[i, j, k, 2] = col[2]
+
     c[:, :, :, 3] = np.ones(shape=(nx, ny, nz))
     c = np.abs(c)
 

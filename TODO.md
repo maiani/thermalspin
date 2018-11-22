@@ -1,8 +1,6 @@
 # Possible improvements
-- Analyse statistical distribution of spins 
-- Add indirect exchange interaction 
+- Interactive mode 
 - Make the program run on GPU
 - User interface
-
 
 

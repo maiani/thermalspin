@@ -6,14 +6,15 @@ Run multiple instance of Heisenberg
 import getopt
 import os
 import sys
+import time
 from multiprocessing import pool, cpu_count
 
 import numpy as np
 
 from skdylib.counter import Counter
+from thermalspin.read_config import read_config_file
 from thermalspin.simulation import init_simulation_tilted, init_simulation_aligned, init_simulation_random, \
     run_simulation
-from thermalspin.read_config import read_config_file
 
 DEFAULT_PARAMS, SIMULATIONS_DIRECTORY, PROCESSES_NUMBER = None, None, None
 
@@ -199,7 +200,11 @@ def set_simulation():
 
     if mode == "run":
         print(f"Running simulations in set {setname}")
+        starting_time = time.time()
         run_set(setname)
+        total_time = time.time() - starting_time
+        total_time_str = "{0:.2f}".format(total_time)
+        print(f"Total running time: {total_time_str} s")
 
     elif mode == "init":
         if sim_2D:

@@ -21,7 +21,7 @@ SNAPSHOTS_ARRAY_INITIAL_DIMENSION = int(3e4)
 
 class TSSimulation:
     """
-    Handler of the HeisenbergSystem simulation.
+    Handler of the SpinSystem simulation.
     It run the simulation and collect the results.
     """
 
@@ -209,10 +209,10 @@ def run_simulation(simulation_directory, verbose=True):
     else:
         raise Exception("Missing state.npy file")
 
-    param_J = np.array(params["param_J"])
-    param_D = np.array(params["param_D"])
-    param_Hz = np.array(params["param_Hz"])
-    param_T = np.array(params["param_T"])
+    param_J = np.array(params["param_J"], dtype=np.float)
+    param_D = np.array(params["param_D"], dtype=np.float)
+    param_Hz = np.array(params["param_Hz"], dtype=np.float)
+    param_T = np.array(params["param_T"], dtype=np.float)
     steps_number = params["steps_number"]
     delta_snapshots = params["delta_snapshots"]
     save_snapshots = params["save_snapshots"]
