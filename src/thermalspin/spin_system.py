@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
-Classical Heisenberg model Monte Carlo simulator
+Classical Spin System Monte Carlo simulator
 """
+
 import numpy as np
 from numba import jit
 
@@ -14,7 +14,7 @@ USE_NUMBA = True
 
 class SpinSystem:
     """
-    This class represent a system described by an Heisenberg Hamiltonian, also known as O(3) model
+    This class represent a spin system with Heisenberg interaction, DMI and Zeeman terms
     """
 
     def __init__(self, initial_state, J, D, Hz, T):
@@ -31,6 +31,7 @@ class SpinSystem:
         self.nz = self.state.shape[2]
         self.sites_number = self.nx * self.ny * self.nz
 
+        # Set the best energy functions depending on the the presence of an antisymmetric term
         self.step_function = compute_step_Heisenberg if D == 0 else compute_step_DMI
         self.compute_energy_function = compute_energy_Heisenberg if D == 0 else compute_energy_DMI
 
@@ -76,14 +77,18 @@ def compute_magnetization(state):
 # Pure Heisenberg model
 
 @jit(nopython=USE_NUMBA, cache=USE_NUMBA)
-def neighbhour_energy_Heisenberg(i, j, k, ii, jj, kk, state, J, D):
+def neighbhour_energy_Heisenberg(i, j, k, ii, jj, kk, state, J):
+    """
+    Compute the energy of two adjacent spins due to the Heisenberg Hamiltonian
+    :return: the energy computed
+    """
     heisenberg_term = -J*np.dot(state[i, j, k], state[ii, jj, kk])
     return heisenberg_term
 
 @jit(nopython=USE_NUMBA, cache=USE_NUMBA)
 def compute_energy_Heisenberg(state, nx, ny, nz, J, D, Hz):
     """
-    Compute the energy of the system
+    Compute the energy of the system with Heisenberg Hamiltonian
     :return: The value of the energy
     """
 
@@ -91,14 +96,14 @@ def compute_energy_Heisenberg(state, nx, ny, nz, J, D, Hz):
 
     for i, j, k in np.ndindex(nx, ny, nz):
         ii = (i + 1) % nx
-        energy_counter += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J, D)
+        energy_counter += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J)
 
         jj = (j + 1) % ny
-        energy_counter += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J, D)
+        energy_counter += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J)
 
         if nz > 1:
             kk = (k + 1) % nz
-            energy_counter += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J, D)
+            energy_counter += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J)
 
         energy_counter += - Hz * state[i, j, k, 2]
 
@@ -121,23 +126,23 @@ def compute_step_Heisenberg(state, nx, ny, nz, J, D, Hz, beta, energy, total_mag
     e0 = 0
 
     ii = (i + 1) % nx
-    e0 += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J, D)
+    e0 += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J)
 
     ii = (i - 1) % nx
-    e0 += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J, D)
+    e0 += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J)
 
     jj = (j + 1) % ny
-    e0 += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J, D)
+    e0 += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J)
 
     jj = (j - 1) % ny
-    e0 += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J, D)
+    e0 += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J)
 
     if nz > 1:
         kk = (k + 1) % nz
-        e0 += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J, D)
+        e0 += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J)
 
         kk = (k - 1) % nz
-        e0 += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J, D)
+        e0 += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J)
 
     e0 += -Hz * state[i, j, k, 2]
 
@@ -148,23 +153,23 @@ def compute_step_Heisenberg(state, nx, ny, nz, J, D, Hz, beta, energy, total_mag
     e1 = 0
 
     ii = (i + 1) % nx
-    e1 += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J, D)
+    e1 += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J)
 
     ii = (i - 1) % nx
-    e1 += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J, D)
+    e1 += neighbhour_energy_Heisenberg(i, j, k, ii, j, k, state, J)
 
     jj = (j + 1) % ny
-    e1 += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J, D)
+    e1 += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J)
 
     jj = (j - 1) % ny
-    e1 += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J, D)
+    e1 += neighbhour_energy_Heisenberg(i, j, k, i, jj, k, state, J)
 
     if nz > 1:
         kk = (k + 1) % nz
-        e1 += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J, D)
+        e1 += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J)
 
         kk = (k - 1) % nz
-        e1 += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J, D)
+        e1 += neighbhour_energy_Heisenberg(i, j, k, i, j, kk, state, J)
 
     e1 += -Hz * state[i, j, k, 2]
 
@@ -185,50 +190,8 @@ def compute_step_Heisenberg(state, nx, ny, nz, J, D, Hz, beta, energy, total_mag
 
 # Heisenberg interaction + DMI
 
-@jit(nopython=USE_NUMBA, cache=USE_NUMBA)
-def compute_energy_DMI(state, nx, ny, nz, J, D, Hz):
-    """
-    Compute the energy of the system
-    :return: The value of the energy
-    """
 
-    energy_counter = 0.0
-
-    Axp = np.array(([-J, 0, 0],
-                    [0, -J, -D],
-                    [0, +D, -J]))
-
-    Ayp = np.array(([-J, 0, +D],
-                    [0, -J, 0],
-                    [-D, 0, -J]))
-
-    Azp = np.array(([-J, -D, 0],
-                    [+D, -J, 0],
-                    [0, 0, -J]))
-
-    for i, j, k in np.ndindex(nx, ny, nz):
-        ii = (i + 1) % nx
-        energy_counter += state[i, j, k].T.dot(Axp).dot(state[ii, j, k])
-
-        jj = (j + 1) % ny
-        energy_counter += state[i, j, k].T.dot(Ayp).dot(state[i, jj, k])
-
-        if nz > 1:
-            kk = (k + 1) % nz
-            energy_counter += state[i, j, k].T.dot(Azp).dot(state[i, j, kk])
-
-        energy_counter += - Hz * state[i, j, k, 2]
-
-    return energy_counter
-
-
-@jit(nopython=USE_NUMBA, cache=USE_NUMBA)
-def compute_step_DMI(state, nx, ny, nz, J, D, Hz, beta, energy, total_magnetization):
-    """
-    Evolve the system computing a step of Metropolis-Hastings Monte Carlo.
-    This non OOP function is accelerated trough jit compilation.
-    """
-
+def interaction_matrices(J, D):
     Axp = np.array(([-J, 0, 0],
                     [0, -J, -D],
                     [0, +D, -J]))
@@ -252,6 +215,46 @@ def compute_step_DMI(state, nx, ny, nz, J, D, Hz, beta, energy, total_magnetizat
     Azn = np.array(([-J, +D, 0],
                     [-D, -J, 0],
                     [0, 0, -J]))
+
+    return Axp, Axn, Ayp, Ayn, Azp, Azn
+
+
+
+
+@jit(nopython=USE_NUMBA, cache=USE_NUMBA)
+def compute_energy_DMI(state, nx, ny, nz, J, D, Hz):
+    """
+    Compute the energy of the system with Heisenberg, DMI and Zeeman term
+    :return: The value of the energy
+    """
+
+    energy_counter = 0.0
+
+    Axp, Axn, Ayp, Ayn, Azp, Azn = interaction_matrices(J, D)
+
+    for i, j, k in np.ndindex(nx, ny, nz):
+        ii = (i + 1) % nx
+        energy_counter += state[i, j, k].T.dot(Axp).dot(state[ii, j, k])
+
+        jj = (j + 1) % ny
+        energy_counter += state[i, j, k].T.dot(Ayp).dot(state[i, jj, k])
+
+        if nz > 1:
+            kk = (k + 1) % nz
+            energy_counter += state[i, j, k].T.dot(Azp).dot(state[i, j, kk])
+
+        energy_counter += - Hz * state[i, j, k, 2]
+
+    return energy_counter
+
+
+@jit(nopython=USE_NUMBA, cache=USE_NUMBA)
+def compute_step_DMI(state, nx, ny, nz, J, D, Hz, beta, energy, total_magnetization):
+    """
+    Evolve the system computing a step of Metropolis-Hastings Monte Carlo.
+    """
+
+    Axp, Axn, Ayp, Ayn, Azp, Azn = interaction_matrices(J, D)
 
     # Select a random spin in the system
     i = np.random.randint(0, nx)

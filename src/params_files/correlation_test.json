@@ -2,13 +2,16 @@
   "param_J": [
     1
   ],
+  "param_D": [
+    0
+  ],
   "param_Hz": [
     0
   ],
   "param_T": [
     2
   ],
-  "steps_number": 400000,
+  "steps_number": 200000,
   "delta_snapshots": 200,
   "save_snapshots": true
 }

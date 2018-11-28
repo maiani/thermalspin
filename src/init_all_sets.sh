@@ -21,10 +21,11 @@
 #cp -f ./params_files/2D_config.json ./config.json
 #./set_simulation.py -i heisenberg_2D --2D -L 16,20,24,28,32 -T 0.25,2,0.05 --tilted
 
-## Skyrmion
-#cp -f ./params_files/2D_config_DMI.json ./config.json
-#./set_simulation.py -i heisenberg_DMI_2D --2D -L 24,32,48,64 -T 0.2,3,0.1 --tilted
+# Skyrmion
+# cp -f ./params_files/2D_config_DMI.json ./config.json
+# ./set_simulation.py -i heisenberg_DMI_2D --2D -L 32,40,48,56,64 -T 0.2,3,0.1 --tilted
 
-cp -f ./params_files/2D_config_DMI_H.json ./config.json
-./set_simulation.py -i heisenberg_DMI_2D_H --2D -L 64 -T 0.2,3,0.1 --tilted
+## Skyrmion with H
+# cp -f ./params_files/2D_config_DMI_H.json ./config.json
+# ./set_simulation.py -i heisenberg_DMI_2D_H --2D -L 80 -T 0.2,2,0.1 --tilted
 

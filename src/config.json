@@ -11,9 +11,9 @@
     0
   ],
   "default_param_T": [
-    1
+    0.2
   ],
   "default_delta_snapshots": 5e3,
-  "default_steps_number": 5e7,
+  "default_steps_number": 1e7,
   "default_save_snapshots": false
 }

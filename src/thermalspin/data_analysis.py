@@ -61,7 +61,6 @@ def load_set_results(set_name, load_set_snapshots=False):
     simulations_list.sort()
     simulation_number = len(simulations_list)
 
-
     for i in range(simulation_number):
         try:
             final_state_loaded, t_loaded, J_loaded, D_loaded, Hz_loaded, T_loaded, E_loaded, m_loaded = load_results(
@@ -88,7 +87,7 @@ def load_set_results(set_name, load_set_snapshots=False):
             T[i] = T_loaded
             E[i] = E_loaded
             m[i] = m_loaded
-            print(simulations_list[i])
+            print(simulations_list[i], "loaded")
         except Exception as e:
             print(f"Error in {simulations_list[i]}")
             print(e)
@@ -98,8 +97,12 @@ def load_set_results(set_name, load_set_snapshots=False):
     return final_state, L, t, J, D, Hz, T, E, m, snapshots
 
 
-def arrange_set_results_LT(L_lst, t_lst, J_lst, D_lst, Hz_lst, T_lst, E_lst, m_lst, final_state_lst, snapshots_lst=None):
+def arrange_set_results_LT(L_lst, t_lst, J_lst, D_lst, Hz_lst, T_lst, E_lst, m_lst, final_state_lst,
+                           snapshots_lst=None):
     L_new = np.unique(L_lst)
+
+    for i in range(len(T_lst)):
+        T_lst[i] = np.unique(np.around(T_lst[i], decimals=5))
     T_new = np.unique(T_lst)
 
     L_num = L_new.shape[0]
@@ -173,7 +176,6 @@ def arrange_set_results_LH(L_lst, t_lst, J_lst, H_lst, T_lst, e_lst, m_lst, fina
 # --------------------------------------------- COMPUTING --------------------------------------------------------------
 
 
-
 def bootstrap(initial_samples, n, new_samples_number):
     old_samples_number = initial_samples.shape[0]
     new_shape = (new_samples_number, n)
@@ -184,7 +186,6 @@ def bootstrap(initial_samples, n, new_samples_number):
         new_samples[i] = initial_samples.take(indices)
 
     return new_samples
-
 
 
 # @jit(nopython=True, cache=True)
@@ -256,7 +257,7 @@ def radial_distribution(correlation_matrix):
 # ---------------------------------------------- PLOTTING --------------------------------------------------------------
 
 
-def plot_state(snapshot):
+def plot_state(snapshot, hls=False):
     """
     Plot system state
     """
@@ -271,22 +272,36 @@ def plot_state(snapshot):
     u = np.zeros(shape=(nx, ny, nz))
     v = np.zeros(shape=(nx, ny, nz))
     w = np.zeros(shape=(nx, ny, nz))
+    h = np.zeros(shape=(nx, ny, nz))
+    l = np.zeros(shape=(nx, ny, nz))
 
     for i, j, k in np.ndindex(nx, ny, nz):
-        u[i, j, k], v[i, j, k], w[i, j, k] = snapshot[i, j, k, 0],  snapshot[i, j, k, 1],  snapshot[i, j, k, 2]
+        u[i, j, k], v[i, j, k], w[i, j, k] = snapshot[i, j, k, 0], snapshot[i, j, k, 1], snapshot[i, j, k, 2]
+        theta, phi = xyz2sph(snapshot[i, j, k])
+        h[i, j, k] = phi / 2 / np.pi
+        l[i, j, k] = theta / np.pi
 
     c = np.zeros(shape=(nx, ny, nz, 4))
-    c[:, :, :, 0] = u
-    c[:, :, :, 1] = v
-    c[:, :, :, 2] = w
+    if not hls:
+        c[:, :, :, 0] = u
+        c[:, :, :, 1] = v
+        c[:, :, :, 2] = w
+    else:
+        for i, j, k in np.ndindex(nx, ny, nz):
+            col = colorsys.hls_to_rgb(h[i, j, k], l[i, j, k], 1)
+            c[i, j, k, 0] = col[0]
+            c[i, j, k, 1] = col[1]
+            c[i, j, k, 2] = col[2]
+
     c[:, :, :, 3] = np.ones(shape=(nx, ny, nz))
     c = np.abs(c)
 
     c2 = np.zeros(shape=(nx * ny * nz, 4))
-    l = 0
+
+    p = 0
     for i, j, k in np.ndindex((nx, ny, nz)):
-        c2[l] = c[i, j, k]
-        l += 1
+        c2[p] = c[i, j, k]
+        p += 1
 
     c3 = np.concatenate((c2, np.repeat(c2, 2, axis=0)), axis=0)
 
@@ -298,10 +313,10 @@ def plot_state(snapshot):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
-    return fig
+    return fig, ax
 
 
-def plot_state_2D(snapshot, hsl=False):
+def plot_state_2D(snapshot, hls=False):
     """
     Plot system state
     """
@@ -321,14 +336,13 @@ def plot_state_2D(snapshot, hsl=False):
     l = np.zeros(shape=(nx, ny, nz))
 
     for i, j, k in np.ndindex(nx, ny, nz):
-        u[i, j, k], v[i, j, k], w[i, j, k] = snapshot[i, j, k, 0], snapshot[i, j, k, 1], snapshot[i,j,k,2]
+        u[i, j, k], v[i, j, k], w[i, j, k] = snapshot[i, j, k, 0], snapshot[i, j, k, 1], snapshot[i, j, k, 2]
         theta, phi = xyz2sph(snapshot[i, j, k])
         h[i, j, k] = phi / 2 / np.pi
         l[i, j, k] = theta / np.pi
 
-
     c = np.zeros(shape=(nx, ny, nz, 4))
-    if not hsl:
+    if not hls:
         c[:, :, :, 0] = u
         c[:, :, :, 1] = v
         c[:, :, :, 2] = w
@@ -343,10 +357,10 @@ def plot_state_2D(snapshot, hsl=False):
     c = np.abs(c)
 
     c2 = np.zeros(shape=(nx * ny * nz, 4))
-    l = 0
+    p = 0
     for i, j, k in np.ndindex((nx, ny, nz)):
-        c2[l] = c[i, j, k]
-        l += 1
+        c2[p] = c[i, j, k]
+        p += 1
 
     c3 = np.concatenate((c2, np.repeat(c2, 2, axis=0)), axis=0)
 
@@ -358,12 +372,19 @@ def plot_state_2D(snapshot, hsl=False):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
+    ax.tick_params(
+        axis='z',  # changes apply to the x-axis
+        which='both',  # both major and minor ticks are affected
+        bottom=False,  # ticks along the bottom edge are off
+        top=False,  # ticks along the top edge are off
+        labelbottom=False)  # labels along the bottom edge are off
+
     ax.set_zlim([-1.1, 1.1])
 
-    return fig
+    return fig, ax
 
 
-def plot_spin_directions(snapshot):
+def plot_spin_directions(snapshot, hls=False):
     """
     Plot spherical representation of spins
     """
@@ -378,9 +399,30 @@ def plot_spin_directions(snapshot):
         points[n] = snapshot[i, j, k]
         n += 1
 
+    if not hls:
+        c = np.abs(points)
+    else:
+        c_arr = np.zeros((nx, ny, nz, 4))
+        for i, j, k in np.ndindex(nx, ny, nz):
+            theta, phi = xyz2sph(snapshot[i, j, k])
+            h = phi / 2 / np.pi
+            l = theta / np.pi
+            col = colorsys.hls_to_rgb(h, l, 1)
+            c_arr[i, j, k, 0] = col[0]
+            c_arr[i, j, k, 1] = col[1]
+            c_arr[i, j, k, 2] = col[2]
+        c_arr[:, :, :, 3] = np.ones(shape=(nx, ny, nz))
+        c_arr = np.abs(c_arr)
+
+        c = np.zeros(shape=(nx * ny * nz, 4))
+        p = 0
+        for i, j, k in np.ndindex((nx, ny, nz)):
+            c[p] = c_arr[i, j, k]
+            p += 1
+
     fig = plt.figure()
     ax: Axes3D = fig.gca(projection='3d')
-    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=np.abs(points), s=2)
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=c, s=2)
 
     ax.set_xlim([-1.1, 1.1])
     ax.set_ylim([-1.1, 1.1])
@@ -390,4 +432,4 @@ def plot_spin_directions(snapshot):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
-    return fig
+    return fig, ax

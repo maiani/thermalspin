@@ -8,12 +8,12 @@
     1
   ],
   "default_param_Hz": [
-    0
+    0.5
   ],
   "default_param_T": [
-    1
+    0.6
   ],
   "default_delta_snapshots": 5e3,
-  "default_steps_number": 5e7,
+  "default_steps_number": 1e8,
   "default_save_snapshots": false
 }
